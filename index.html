@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="th" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard ความสัมพันธ์ของสิ่งมีชีวิตในระบบนิเวศ</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+        }
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        /* ซ่อน Scrollbar แต่ยังเลื่อนได้ */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-emerald-700 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-600 p-3 rounded-2xl shadow-inner text-emerald-100 flex items-center justify-center">
+                    <i class="fa-solid fa-leaf text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight">EcoRelations Dashboard</h1>
+                    <p class="text-xs sm:text-sm text-emerald-200">ระบบสารสนเทศความสัมพันธ์ระหว่างสิ่งมีชีวิตในระบบนิเวศ</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex space-x-6 text-sm font-medium">
+                <a href="#relationships" class="hover:text-emerald-200 transition">ประเภทความสัมพันธ์</a>
+                <a href="#overview" class="hover:text-emerald-200 transition">ภาพรวม</a>
+                <a href="#matrix" class="hover:text-emerald-200 transition">ตารางสรุป (+/-/0)</a>
+                <a href="#quiz" class="hover:text-emerald-200 transition">ทดสอบความรู้</a>
+            </nav>
+            <div class="flex items-center space-x-2">
+                <span class="bg-emerald-800 text-emerald-100 px-3 py-1 rounded-full text-xs font-medium border border-emerald-600">
+                    <i class="fa-solid fa-seedling mr-1"></i> ชีววิทยา
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow w-full flex flex-col">
+        
+        <!-- Section 1: รูปแบบความสัมพันธ์ (บนสุด) -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-12 w-full">
+            <div id="relationships" class="scroll-mt-24">
+                <div class="text-center max-w-2xl mx-auto mb-10">
+                    <h2 class="text-3xl font-bold text-slate-900">รูปแบบความสัมพันธ์ระหว่างสิ่งมีชีวิต</h2>
+                    <p class="text-slate-600 mt-2">เลือกตัวกรองด้านล่างเพื่อศึกษาความสัมพันธ์แต่ละประเภท พร้อมตัวอย่างจริงในธรรมชาติ</p>
+                    
+                    <!-- Filter Buttons (บรรทัดเดียว Scrollable) -->
+                    <div class="flex overflow-x-auto no-scrollbar justify-start md:justify-center gap-2 mt-6 pb-2" id="filter-container">
+                        <button onclick="filterCards('all')" class="filter-btn active bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow transition whitespace-nowrap flex-shrink-0">ทั้งหมด</button>
+                        <button onclick="filterCards('symbiosis')" class="filter-btn bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap flex-shrink-0">ภาวะพึ่งพากัน (+/+)</button>
+                        <button onclick="filterCards('commensalism')" class="filter-btn bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap flex-shrink-0">ภาวะอิงอาศัย (+/0)</button>
+                        <button onclick="filterCards('parasitism')" class="filter-btn bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap flex-shrink-0">ภาวะปรสิต (+/-)</button>
+                        <button onclick="filterCards('predation')" class="filter-btn bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap flex-shrink-0">ภาวะล่าเหยื่อ (+/-)</button>
+                        <button onclick="filterCards('competition')" class="filter-btn bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap flex-shrink-0">ภาวะการแข่งขัน (-/-)</button>
+                        <button onclick="filterCards('others')" class="filter-btn bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap flex-shrink-0">ภาวะอื่นๆ (+/+, -/0)</button>
+                    </div>
+                </div>
+
+                <!-- Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="cards-grid">
+
+                    <!-- Card 1: ภาวะพึ่งพากัน (Mutualism) -->
+                    <div class="relation-card bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden flex flex-col transition hover:shadow-xl" data-category="symbiosis">
+                        <div class="bg-emerald-50 px-6 py-4 border-b border-emerald-100 flex items-center justify-between">
+                            <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full">ภาวะพึ่งพากัน</span>
+                            <span class="text-sm font-bold text-emerald-700 bg-white px-2.5 py-0.5 rounded-lg border border-emerald-200 shadow-sm">( + / + )</span>
+                        </div>
+                        <div class="p-6 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-2 flex items-center">
+                                    <i class="fa-solid fa-handshake text-emerald-600 mr-2"></i> Mutualism
+                                </h3>
+                                <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                                    เป็นความสัมพันธ์ที่สิ่งมีชีวิตทั้งสองชนิดได้ประโยชน์ร่วมกัน และ<b>ไม่สามารถแยกจากกันได้เลยตลอดชีวิต</b> หากแยกกันจะตาย
+                                </p>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ตัวอย่างคลาสสิก:</h4>
+                                    <ul class="text-sm text-slate-700 space-y-1.5">
+                                        <li><i class="fa-solid fa-check text-emerald-600 mr-1.5"></i> <b>ไลเคน (Lichen):</b> สาหร่ายกับรา</li>
+                                        <li><i class="fa-solid fa-check text-emerald-600 mr-1.5"></i> <b>โปรโตซัวในลำไส้ปลวก:</b> ย่อยเซลลูโลส</li>
+                                        <li><i class="fa-solid fa-check text-emerald-600 mr-1.5"></i> <b>แบคทีเรียไรโซเบียมในปมรากถั่ว</b></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button onclick="openDetailModal('ภาวะพึ่งพากัน (Mutualism)', '( + / + )', 'เป็นรูปแบบความสัมพันธ์ที่สิ่งมีชีวิต 2 ชนิดมาอยู่ร่วมกันโดยต่างฝ่ายต่างได้รับประโยชน์ ซึ่งกันและกัน และสำคัญมากคือ ต่างฝ่ายต่างพึ่งพาอาศัยกันจนไม่สามารถแยกจากกันได้ หากแยกกันอยู่จะไม่สามารถดำรงชีวิตอยู่รอดได้ เช่น ไลเคน (ราอาศัยความชื้นและอาหารจากสาหร่าย และสาหร่ายได้ที่อยู่อาศัยจากรา)', ['ไลเคน (Lichen) บนเปลือกไม้', 'โพรโทซัวในลำไส้ปลวก', 'แบคทีเรียไรโซเบียมกับรากพืชตระกูลถั่ว', 'ดอกไม้กับแมลงผสมเกสรบางชนิดที่ผูกพันกันเฉพาะเจาะจง'])" class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-sm font-semibold py-2.5 px-4 rounded-xl transition text-center">
+                                ดูรายละเอียดเชิงลึก <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: ภาวะได้ประโยชน์ร่วมกัน (Protocooperation) -->
+                    <div class="relation-card bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden flex flex-col transition hover:shadow-xl" data-category="others symbiosis">
+                        <div class="bg-emerald-50 px-6 py-4 border-b border-emerald-100 flex items-center justify-between">
+                            <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full">ภาวะได้ประโยชน์ร่วมกัน</span>
+                            <span class="text-sm font-bold text-emerald-700 bg-white px-2.5 py-0.5 rounded-lg border border-emerald-200 shadow-sm">( + / + )</span>
+                        </div>
+                        <div class="p-6 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-2 flex items-center">
+                                    <i class="fa-solid fa-people-arrows text-emerald-600 mr-2"></i> Protocooperation
+                                </h3>
+                                <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                                    สิ่งมีชีวิตทั้งสองฝ่ายได้ประโยชน์ร่วมกันเช่นกัน แต่<b>สามารถแยกกันอยู่ได้โดยไม่อันตรายถึงชีวิต</b> เป็นการอยู่ร่วมกันเพื่อความสะดวกสบายชั่วคราว
+                                </p>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ตัวอย่างคลาสสิก:</h4>
+                                    <ul class="text-sm text-slate-700 space-y-1.5">
+                                        <li><i class="fa-solid fa-check text-emerald-600 mr-1.5"></i> <b>นกเอี้ยงกับควาย:</b> นกกินแมลง ควายได้ทำความสะอาด</li>
+                                        <li><i class="fa-solid fa-check text-emerald-600 mr-1.5"></i> <b>ดอกไม้กับแมลงทั่วไป:</b> ผสมเกสร</li>
+                                        <li><i class="fa-solid fa-check text-emerald-600 mr-1.5"></i> <b>ปูเสฉวนกับดอกไม้ทะเล (Sea Anemone)</b></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button onclick="openDetailModal('ภาวะได้ประโยชน์ร่วมกัน (Protocooperation)', '( + / + )', 'เป็นความสัมพันธ์ที่ทั้งสองฝ่ายได้ประโยชน์ร่วมกันเหมือนภาวะพึ่งพากัน แต่ต่างกันตรงที่ทั้งสองชนิดสามารถแยกกันอยู่ได้อย่างอิสระโดยไม่ตาย เช่น นกเอี้ยงกับควาย (นกได้อาหารจากแมลงบนหลังควาย ควายได้ช่วยกำจัดแมลงและเตือนภัย)', ['นกเอี้ยงกับควาย / นกบนหลังสัตว์ใหญ่', 'ปูเสฉวนกับดอกไม้ทะเล', 'ดอกไม้กับแมลงหลากหลายชนิด', 'มดดำกับเพลี้ย (มดคอยปกป้องเพลี้ยเพื่อแลกกับน้ำหวาน)'])" class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-sm font-semibold py-2.5 px-4 rounded-xl transition text-center">
+                                ดูรายละเอียดเชิงลึก <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: ภาวะอิงอาศัย หรือ ภาวะเกื้อกูล (Commensalism) -->
+                    <div class="relation-card bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden flex flex-col transition hover:shadow-xl" data-category="commensalism">
+                        <div class="bg-blue-50 px-6 py-4 border-b border-blue-100 flex items-center justify-between">
+                            <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full">ภาวะอิงอาศัย</span>
+                            <span class="text-sm font-bold text-blue-700 bg-white px-2.5 py-0.5 rounded-lg border border-blue-200 shadow-sm">( + / 0 )</span>
+                        </div>
+                        <div class="p-6 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-2 flex items-center">
+                                    <i class="fa-solid fa-house-chimney text-blue-600 mr-2"></i> Commensalism
+                                </h3>
+                                <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                                    เป็นความสัมพันธ์ที่ฝ่ายหนึ่ง<b>ได้ประโยชน์ (+)</b> ส่วนอีกฝ่าย<b>ไม่ได้และไม่เสียประโยชน์ (0)</b> เช่น ได้ที่อยู่อาศัยหรือเศษอาหาร
+                                </p>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ตัวอย่างคลาสสิก:</h4>
+                                    <ul class="text-sm text-slate-700 space-y-1.5">
+                                        <li><i class="fa-solid fa-check text-blue-600 mr-1.5"></i> <b>ฉลามกับเหาฉลาม (Remora)</b></li>
+                                        <li><i class="fa-solid fa-check text-blue-600 mr-1.5"></i> <b>กล้วยไม้บนต้นไม้ใหญ่ (Epiphyte)</b></li>
+                                        <li><i class="fa-solid fa-check text-blue-600 mr-1.5"></i> <b>นกทำรังบนต้นไม้ใหญ่</b></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button onclick="openDetailModal('ภาวะอิงอาศัย หรือ ภาวะเกื้อกูล (Commensalism)', '( + / 0 )', 'เป็นภาวะที่สิ่งมีชีวิตฝ่ายหนึ่งได้รับประโยชน์ เช่น ได้ที่อยู่อาศัย อาหาร หรือการเดินทาง โดยที่สิ่งมีชีวิตอีกฝ่ายหนึ่งไม่ได้ประโยชน์และก็ไม่ได้เสียประโยชน์แต่อย่างใด', ['ฉลามกับเหาฉลาม (เหาฉลามเกาะกินเศษอาหารจากฉลามโดยฉลามไม่เสียประโยชน์)', 'กล้วยไม้บนต้นไม้ใหญ่ (กล้วยไม้ได้รับแสงแดดและความชื้นสูงขึ้น โดยต้นไม้ใหญ่ไม่ได้และไม่เสียอะไร)', 'นกที่ทำรังบนต้นไม้ใหญ่'])" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-semibold py-2.5 px-4 rounded-xl transition text-center">
+                                ดูรายละเอียดเชิงลึก <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: ภาวะปรสิต (Parasitism) -->
+                    <div class="relation-card bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden flex flex-col transition hover:shadow-xl" data-category="parasitism">
+                        <div class="bg-rose-50 px-6 py-4 border-b border-rose-100 flex items-center justify-between">
+                            <span class="bg-rose-100 text-rose-800 text-xs font-bold px-3 py-1 rounded-full">ภาวะปรสิต</span>
+                            <span class="text-sm font-bold text-rose-700 bg-white px-2.5 py-0.5 rounded-lg border border-rose-200 shadow-sm">( + / - )</span>
+                        </div>
+                        <div class="p-6 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-2 flex items-center">
+                                    <i class="fa-solid fa-virus text-rose-600 mr-2"></i> Parasitism
+                                </h3>
+                                <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                                    ฝ่ายหนึ่งเป็นผู้ <b>"อาศัย" (Parasite) ได้ประโยชน์ (+)</b> ส่วนอีกฝ่ายเป็น <b>"ผู้ถูกอาศัย" (Host) เสียประโยชน์ (-)</b> มักดูดสารอาหารแต่ไม่ทำให้เจ้าบ้านตายทันที
+                                </p>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ตัวอย่างคลาสสิก:</h4>
+                                    <ul class="text-sm text-slate-700 space-y-1.5">
+                                        <li><i class="fa-solid fa-check text-rose-600 mr-1.5"></i> <b>เห็บ หมัด เหา บนตัวสัตว์หรือคน</b></li>
+                                        <li><i class="fa-solid fa-check text-rose-600 mr-1.5"></i> <b>พยาธิในร่างกายมนุษย์/สัตว์</b></li>
+                                        <li><i class="fa-solid fa-check text-rose-600 mr-1.5"></i> <b>กาฝากบนต้นไม้ใหญ่</b></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button onclick="openDetailModal('ภาวะปรสิต (Parasitism)', '( + / - )', 'เป็นความสัมพันธ์ที่ฝ่ายหนึ่งเรียกว่า ปรสิต (Parasite) ได้รับประโยชน์ (+) โดยการไปแย่งอาหารหรือดูดน้ำเลี้ยงจากอีกฝ่ายหนึ่งเรียกว่า ผู้ถูกอาศัยหรือโฮสต์ (Host) ซึ่งจะเป็นฝ่ายเสียประโยชน์ (-) โดยทั่วไปปรสิตจะไม่ทำให้โฮสต์ตายทันที เนื่องจากต้องอาศัยโฮสต์ในการดำรงชีวิตต่อไป', ['เห็บ หมัด ไร บนตัวสุนัขหรือแมว', 'พยาธิใบไม้ในตับ พยาธิไส้เดือนในคน', 'กาฝากบนต้นมะม่วง (ส่งรากไปดูดน้ำและแร่ธาตุ)', 'ยุงกัดและดูดเลือดมนุษย์'])" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 text-sm font-semibold py-2.5 px-4 rounded-xl transition text-center">
+                                ดูรายละเอียดเชิงลึก <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 5: ภาวะล่าเหยื่อ (Predation) -->
+                    <div class="relation-card bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden flex flex-col transition hover:shadow-xl" data-category="predation">
+                        <div class="bg-amber-50 px-6 py-4 border-b border-amber-100 flex items-center justify-between">
+                            <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">ภาวะล่าเหยื่อ</span>
+                            <span class="text-sm font-bold text-amber-700 bg-white px-2.5 py-0.5 rounded-lg border border-amber-200 shadow-sm">( + / - )</span>
+                        </div>
+                        <div class="p-6 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-2 flex items-center">
+                                    <i class="fa-solid fa-paw text-amber-600 mr-2"></i> Predation
+                                </h3>
+                                <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                                    ผู้ล่า <b>(Predator) ได้ประโยชน์ (+)</b> ในการจับเหยื่อเป็นอาหาร ส่วนเหยื่อ <b>(Prey) เสียประโยชน์ (-)</b> ถูกทำลายชีวิตเพื่อเป็นพลังงานในห่วงโซ่อาหาร
+                                </p>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ตัวอย่างคลาสสิก:</h4>
+                                    <ul class="text-sm text-slate-700 space-y-1.5">
+                                        <li><i class="fa-solid fa-check text-amber-600 mr-1.5"></i> <b>สิงโตล่าม้าลายในทุ่งหญ้า</b></li>
+                                        <li><i class="fa-solid fa-check text-amber-600 mr-1.5"></i> <b>กบกินแมลง</b></li>
+                                        <li><i class="fa-solid fa-check text-amber-600 mr-1.5"></i> <b>เหยี่ยวล่าปลาในแม่น้ำ</b></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button onclick="openDetailModal('ภาวะล่าเหยื่อ (Predation)', '( + / - )', 'เป็นความสัมพันธ์ที่ฝ่ายหนึ่งจับอีกฝ่ายหนึ่งกินเป็นอาหาร โดยผู้ล่า (Predator) ได้รับประโยชน์ (+) ส่วนเหยื่อ (Prey) เป็นฝ่ายเสียประโยชน์ (-) และมักถึงแก่ความตายทันทีหรือสูญเสียชีวิต ซึ่งมีบทบาทสำคัญอย่างยิ่งในการควบคุมประชากรในระบบนิเวศไม่ให้ล้นโลก', ['เสือโคร่งล่ากวางในป่า', 'กิ้งก่ากินแมลงวัน', 'แมงมุมดักกินแมลงในใย', 'นกฮูกล่าหนูนาในเวลากลางคืน'])" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 text-sm font-semibold py-2.5 px-4 rounded-xl transition text-center">
+                                ดูรายละเอียดเชิงลึก <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 6: ภาวะการแข่งขัน (Competition) -->
+                    <div class="relation-card bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden flex flex-col transition hover:shadow-xl" data-category="competition">
+                        <div class="bg-purple-50 px-6 py-4 border-b border-purple-100 flex items-center justify-between">
+                            <span class="bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 rounded-full">ภาวะการแข่งขัน</span>
+                            <span class="text-sm font-bold text-purple-700 bg-white px-2.5 py-0.5 rounded-lg border border-purple-200 shadow-sm">( - / - )</span>
+                        </div>
+                        <div class="p-6 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-2 flex items-center">
+                                    <i class="fa-solid fa-bolt text-purple-600 mr-2"></i> Competition
+                                </h3>
+                                <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                                    เกิดขึ้นเมื่อสิ่งมีชีวิตมีความต้องการปัจจัยในการดำรงชีวิต (เช่น อาหาร แสง น้ำ คู่) เหมือนกันและมีจำกัด <b>ทั้งสองฝ่ายจึงเสียประโยชน์ (-)</b> เพราะต้องแย่งชิงพลังงานและเสี่ยงพ่ายแพ้
+                                </p>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ตัวอย่างคลาสสิก:</h4>
+                                    <ul class="text-sm text-slate-700 space-y-1.5">
+                                        <li><i class="fa-solid fa-check text-purple-600 mr-1.5"></i> <b>ต้นไม้ใหญ่แย่งแสงแดดในป่าทึบ</b></li>
+                                        <li><i class="fa-solid fa-check text-purple-600 mr-1.5"></i> <b>สิงโตกับไฮยีน่าแย่งเหยื่อกัน</b></li>
+                                        <li><i class="fa-solid fa-check text-purple-600 mr-1.5"></i> <b>วัชพืชแย่งปุ๋ยกับต้นข้าวในนา</b></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button onclick="openDetailModal('ภาวะการแข่งขัน (Competition)', '( - / - )', 'เป็นความสัมพันธ์ที่สิ่งมีชีวิตทั้งสองฝ่ายมีความต้องการปัจจัยในการดำรงชีวิต (เช่น อาหาร แสงแดด น้ำ พื้นที่ หรืออาณาเขต) เหมือนกันและมีจำกัด ทำให้ทั้งสองฝ่ายต่างเสียประโยชน์ (-) จากการต้องต่อสู้หรือแย่งชิงกัน โดยฝ่ายที่อ่อนแอกว่าอาจอดอยากหรือถูกขับไล่', ['ต้นไม้ใหญ่ในป่าแย่งกันรับแสงแดดจากด้านบน', 'สิงโตกับเสือดาวในพื้นที่เดียวกันแย่งกันล่าสัตว์กินพืช', 'หญ้ากับวัชพืชในแปลงเกษตรแย่งน้ำและธาตุอาหาร', 'สุนัขแย่งอาหารกัน'])" class="w-full bg-purple-50 hover:bg-purple-100 text-purple-700 text-sm font-semibold py-2.5 px-4 rounded-xl transition text-center">
+                                ดูรายละเอียดเชิงลึก <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 7: ภาวะหลั่งสารยับยั้ง หรือ ภาวะอสัตย์ (Amensalism) -->
+                    <div class="relation-card bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden flex flex-col transition hover:shadow-xl" data-category="others">
+                        <div class="bg-indigo-50 px-6 py-4 border-b border-indigo-100 flex items-center justify-between">
+                            <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full">ภาวะหลั่งสารยับยั้ง</span>
+                            <span class="text-sm font-bold text-indigo-700 bg-white px-2.5 py-0.5 rounded-lg border border-indigo-200 shadow-sm">( - / 0 )</span>
+                        </div>
+                        <div class="p-6 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-2 flex items-center">
+                                    <i class="fa-solid fa-shield-halved text-indigo-600 mr-2"></i> Amensalism
+                                </h3>
+                                <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                                    ฝ่ายหนึ่ง<b>เสียประโยชน์ (-)</b> จากการถูกสารเคมีหรือกระบวนการบางอย่างยับยั้งการเจริญเติบโต ขณะที่อีกฝ่าย<b>ไม่ได้และไม่เสียประโยชน์ (0)</b>
+                                </p>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ตัวอย่างคลาสสิก:</h4>
+                                    <ul class="text-sm text-slate-700 space-y-1.5">
+                                        <li><i class="fa-solid fa-check text-indigo-600 mr-1.5"></i> <b>ราเพนนิซีเลียมหลั่งสารฆ่าแบคทีเรีย</b></li>
+                                        <li><i class="fa-solid fa-check text-indigo-600 mr-1.5"></i> <b>ต้นสนบางชนิดหลั่งสารขัดขวางหญ้ารอบข้าง</b></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button onclick="openDetailModal('ภาวะหลั่งสารยับยั้ง (Amensalism)', '( - / 0 )', 'เป็นภาวะที่สิ่งมีชีวิตชนิดหนึ่งหลั่งสารเคมีหรือสร้างสภาวะที่ไปยับยั้งหรือทำลายการเจริญเติบโตของสิ่งมีชีวิตอีกชนิดหนึ่ง ทำให้ฝ่ายถูกกระทำเสียประโยชน์ (-) ส่วนฝ่ายที่หลั่งสารไม่ได้ประโยชน์และไม่เสียประโยชน์อะไร (0)', ['เชื้อรา Penicillium หลั่งสารเพนนิซิลลินมายับยั้งการเจริญเติบโตของแบคทีเรียรอบข้าง', 'ต้นไม้ยืนต้นใหญ่แผ่กิ่งก้านบังร่มเงาและหลั่งสารจากรากทำให้พืชเล็กใต้ต้นเติบโตไม่ได้'])" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-semibold py-2.5 px-4 rounded-xl transition text-center">
+                                ดูรายละเอียดเชิงลึก <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 8: ภาวะการได้ประโยชน์จากเหยื่อ (Scavenging / Neutralism & others) -->
+                    <div class="relation-card bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden flex flex-col transition hover:shadow-xl" data-category="others">
+                        <div class="bg-teal-50 px-6 py-4 border-b border-teal-100 flex items-center justify-between">
+                            <span class="bg-teal-100 text-teal-800 text-xs font-bold px-3 py-1 rounded-full">ภาวะกินซาก / อิงอาศัยอื่นๆ</span>
+                            <span class="text-sm font-bold text-teal-700 bg-white px-2.5 py-0.5 rounded-lg border border-teal-200 shadow-sm">( + / 0 )</span>
+                        </div>
+                        <div class="p-6 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-2 flex items-center">
+                                    <i class="fa-solid fa-bone text-teal-600 mr-2"></i> Scavenging & Neutralism
+                                </h3>
+                                <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                                    <b>ภาวะกินซาก (Scavenger):</b> สัตว์กินซากสัตว์ที่ตายแล้วเป็นอาหาร ได้ประโยชน์ (+) โดยซากสัตว์นั้นตายไปแล้วจึงไม่มีผลกระทบ (0) และ <b>ภาวะเป็นกลาง (Neutralism):</b> สิ่งมีชีวิตอยู่ร่วมพื้นที่แต่ไม่เกี่ยวข้องกันเลย
+                                </p>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ตัวอย่างคลาสสิก:</h4>
+                                    <ul class="text-sm text-slate-700 space-y-1.5">
+                                        <li><i class="fa-solid fa-check text-teal-600 mr-1.5"></i> <b>แร้งกินซากสัตว์ที่เสือล่าไว้</b></li>
+                                        <li><i class="fa-solid fa-check text-teal-600 mr-1.5"></i> <b>กระรอกกับกวางในป่าเดียวกัน</b></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button onclick="openDetailModal('ภาวะกินซากและภาวะเป็นกลาง (Scavenging & Neutralism)', '( + / 0 หรือ 0 / 0 )', 'ภาวะกินซากคือสัตว์ที่กินซากสัตว์ที่ตายแล้วเป็นอาหารโดยไม่ได้ไปล่าเอง ทำให้ได้ประโยชน์ (+) โดยซากสัตว์ไม่มีความรู้สึก (0) ส่วนภาวะเป็นกลางคือสิ่งมีชีวิตที่อาศัยอยู่ในแหล่งเดียวกันแต่ไม่มีผลกระทบต่อกันและกันเลย', ['แร้งและไฮยีน่ากินซากสัตว์ที่เสือล่าเหลือไว้', 'กระรอกบนต้นไม้กับกวางป่าที่หากินบนพื้นดินในป่าเดียวกัน'])" class="w-full bg-teal-50 hover:bg-teal-100 text-teal-700 text-sm font-semibold py-2.5 px-4 rounded-xl transition text-center">
+                                ดูรายละเอียดเชิงลึก <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: ภาพรวม (Overview) -->
+        <section id="overview" class="bg-gradient-to-b from-emerald-700 to-emerald-900 text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+            <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 items-center relative z-10">
+                <div class="md:col-span-7 space-y-6">
+                    <span class="bg-emerald-600 text-emerald-100 text-xs font-semibold px-3 py-1.5 rounded-full inline-block uppercase tracking-wider">
+                        Ecosystem Symbiosis & Interactions
+                    </span>
+                    <h2 class="text-3xl sm:text-5xl font-extrabold leading-tight tracking-tight">
+                        สิ่งมีชีวิตพึ่งพาและเกี่ยวพันกันอย่างไรในธรรมชาติ?
+                    </h2>
+                    <p class="text-emerald-100 text-base sm:text-lg leading-relaxed font-light">
+                        ในธรรมชาติ ไม่มีสิ่งมีชีวิตใดสามารถดำรงชีวิตอยู่ได้อย่างโดดเดี่ยว ทุกชนิดต่างต้องพึ่งพา แย่งชิง หรือเกื้อกูลกันเพื่อความอยู่รอดและการถ่ายทอดพลังงาน 
+                        Dashboard นี้รวบรวมและจำแนกรูปแบบความสัมพันธ์ทางนิเวศวิทยาไว้อย่างครบถ้วนเข้าใจง่าย
+                    </p>
+                    <div class="flex flex-wrap gap-4 pt-2">
+                        <a href="#relationships" class="bg-white text-emerald-900 font-semibold px-6 py-3 rounded-xl shadow-lg hover:bg-emerald-50 transition transform hover:-translate-y-0.5 flex items-center">
+                            <i class="fa-solid fa-compass mr-2 text-emerald-700"></i> สำรวจความสัมพันธ์
+                        </a>
+                        <a href="#quiz" class="bg-emerald-800/80 hover:bg-emerald-800 border border-emerald-600 text-white font-medium px-6 py-3 rounded-xl transition flex items-center">
+                            <i class="fa-solid fa-gamepad mr-2"></i> เล่นเกมทายภาวะ
+                        </a>
+                    </div>
+                </div>
+                <div class="md:col-span-5 flex justify-center">
+                    <div class="bg-emerald-800/50 backdrop-blur-md p-6 rounded-3xl border border-emerald-600/50 shadow-2xl max-w-sm w-full animate-float">
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-emerald-700">
+                            <h3 class="font-bold text-lg text-emerald-100 flex items-center">
+                                <i class="fa-solid fa-chart-pie mr-2 text-emerald-400"></i> สรุปสัญลักษณ์สลักสำคัญ
+                            </h3>
+                            <span class="text-xs text-emerald-300">สัญลักษณ์สากล</span>
+                        </div>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex items-center justify-between bg-emerald-900/60 p-2.5 rounded-xl">
+                                <span class="flex items-center font-medium"><span class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs mr-2">+</span> ได้ประโยชน์</span>
+                                <span class="text-xs text-emerald-200">เติบโต/มีชีวิตดีขึ้น</span>
+                            </div>
+                            <div class="flex items-center justify-between bg-emerald-900/60 p-2.5 rounded-xl">
+                                <span class="flex items-center font-medium"><span class="w-6 h-6 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-xs mr-2">-</span> เสียประโยชน์</span>
+                                <span class="text-xs text-emerald-200">ถูกทำลาย/สูญเสียพลังงาน</span>
+                            </div>
+                            <div class="flex items-center justify-between bg-emerald-900/60 p-2.5 rounded-xl">
+                                <span class="flex items-center font-medium"><span class="w-6 h-6 rounded-full bg-slate-500 text-white flex items-center justify-center font-bold text-xs mr-2">0</span> ไม่ได้/ไม่เสีย</span>
+                                <span class="text-xs text-emerald-200">ไม่มีผลกระทบใดๆ</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Matrix และ Quiz -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
+            <div id="matrix" class="scroll-mt-24">
+                <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden p-6 sm:p-10">
+                    <div class="max-w-3xl mb-8">
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">สรุปเชิงเปรียบเทียบ</span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">ตารางสรุปผลกระทบความสัมพันธ์ (+, -, 0)</h2>
+                        <p class="text-slate-600 text-sm mt-1">ตารางสรุปความสัมพันธ์ของสิ่งมีชีวิตชนิดที่ 1 (Species A) และ ชนิดที่ 2 (Species B)</p>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700 text-xs sm:text-sm uppercase font-semibold">
+                                    <th class="p-4 rounded-l-xl">รูปแบบความสัมพันธ์</th>
+                                    <th class="p-4 text-center">ชนิดที่ 1 (Species A)</th>
+                                    <th class="p-4 text-center">ชนิดที่ 2 (Species B)</th>
+                                    <th class="p-4 rounded-r-xl">ตัวอย่างสำคัญ</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-4 font-bold text-emerald-700">ภาวะพึ่งพากัน (Mutualism)</td>
+                                    <td class="p-4 text-center"><span class="bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-lg">+</span></td>
+                                    <td class="p-4 text-center"><span class="bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-lg">+</span></td>
+                                    <td class="p-4 text-slate-600">ไลเคน (สาหร่าย + รา), โพรโทซัวในลำไส้ปลวก</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-4 font-bold text-emerald-600">ภาวะได้ประโยชน์ร่วมกัน (Protocooperation)</td>
+                                    <td class="p-4 text-center"><span class="bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-lg">+</span></td>
+                                    <td class="p-4 text-center"><span class="bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-lg">+</span></td>
+                                    <td class="p-4 text-slate-600">นกเอี้ยงกับควาย, ปูเสฉวนกับดอกไม้ทะเล</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-4 font-bold text-blue-600">ภาวะอิงอาศัย (Commensalism)</td>
+                                    <td class="p-4 text-center"><span class="bg-blue-100 text-blue-800 font-bold px-2.5 py-1 rounded-lg">+</span></td>
+                                    <td class="p-4 text-center"><span class="bg-slate-100 text-slate-700 font-bold px-2.5 py-1 rounded-lg">0</span></td>
+                                    <td class="p-4 text-slate-600">ฉลามกับเหาฉลาม, กล้วยไม้บนต้นไม้ใหญ่</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-4 font-bold text-rose-600">ภาวะปรสิต (Parasitism)</td>
+                                    <td class="p-4 text-center"><span class="bg-rose-100 text-rose-800 font-bold px-2.5 py-1 rounded-lg">+</span></td>
+                                    <td class="p-4 text-center"><span class="bg-rose-100 text-rose-800 font-bold px-2.5 py-1 rounded-lg">-</span></td>
+                                    <td class="p-4 text-slate-600">เห็บหมัดบนตัวสุนัข, กาฝากบนต้นไม้</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-4 font-bold text-amber-600">ภาวะล่าเหยื่อ (Predation)</td>
+                                    <td class="p-4 text-center"><span class="bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-lg">+</span></td>
+                                    <td class="p-4 text-center"><span class="bg-rose-100 text-rose-800 font-bold px-2.5 py-1 rounded-lg">-</span></td>
+                                    <td class="p-4 text-slate-600">สิงโตล่าม้าลาย, กบกินแมลง</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-4 font-bold text-purple-600">ภาวะการแข่งขัน (Competition)</td>
+                                    <td class="p-4 text-center"><span class="bg-rose-100 text-rose-800 font-bold px-2.5 py-1 rounded-lg">-</span></td>
+                                    <td class="p-4 text-center"><span class="bg-rose-100 text-rose-800 font-bold px-2.5 py-1 rounded-lg">-</span></td>
+                                    <td class="p-4 text-slate-600">ต้นไม้แย่งแสงแดด, สิงโตกับไฮยีน่าแย่งเหยื่อ</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-4 font-bold text-indigo-600">ภาวะหลั่งสารยับยั้ง (Amensalism)</td>
+                                    <td class="p-4 text-center"><span class="bg-slate-100 text-slate-700 font-bold px-2.5 py-1 rounded-lg">-</span></td>
+                                    <td class="p-4 text-center"><span class="bg-slate-100 text-slate-700 font-bold px-2.5 py-1 rounded-lg">0</span></td>
+                                    <td class="p-4 text-slate-600">ราเพนนิซีเลียมยับยั้งแบคทีเรีย</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="quiz" class="mt-20 scroll-mt-24">
+                <div class="bg-gradient-to-r from-emerald-900 to-slate-900 rounded-3xl shadow-2xl p-8 sm:p-12 text-white relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl">
+                        <i class="fa-solid fa-brain"></i>
+                    </div>
+                    <div class="max-w-2xl relative z-10">
+                        <span class="bg-emerald-700 text-emerald-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Interactive Test</span>
+                        <h2 class="text-2xl sm:text-4xl font-extrabold mt-3">ทดสอบความรู้: จับคู่ความสัมพันธ์สิ่งมีชีวิต</h2>
+                        <p class="text-emerald-200 text-sm sm:text-base mt-2">ทดสอบความเข้าใจของคุณว่าสถานการณ์ที่กำหนดตรงกับภาวะใดในระบบนิเวศ</p>
+                    </div>
+
+                    <!-- Quiz Container -->
+                    <div class="mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/15 relative z-10">
+                        <div id="quiz-question-box">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-xs font-semibold bg-emerald-700 text-emerald-100 px-3 py-1 rounded-lg" id="quiz-progress">คำถามข้อที่ 1 / 4</span>
+                                <span class="text-xs text-emerald-300 font-medium" id="quiz-score">คะแนน: 0</span>
+                            </div>
+                            <h3 class="text-lg sm:text-xl font-bold mb-6 text-white" id="quiz-question-text">
+                                คำถามกำลังโหลด...
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="quiz-options">
+                                <!-- Options generated dynamically -->
+                            </div>
+                        </div>
+                        
+                        <div id="quiz-result-box" class="hidden text-center py-6">
+                            <div class="text-5xl mb-3 text-emerald-400">
+                                <i class="fa-solid fa-award"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white">ทำแบบทดสอบเสร็จสิ้น!</h3>
+                            <p class="text-emerald-200 mt-2 text-lg" id="quiz-final-score">คุณทำคะแนนได้ 4 / 4 คะแนน</p>
+                            <button onclick="restartQuiz()" class="mt-6 bg-emerald-600 hover:bg-emerald-50 text-white font-semibold px-8 py-3 rounded-xl transition shadow-lg">
+                                <i class="fa-solid fa-rotate-right mr-2"></i> ทําแบบทดสอบอีกครั้ง
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="detail-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative transform transition-all animate-float">
+            <button onclick="closeDetailModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 w-9 h-9 rounded-full flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="flex items-center space-x-3 mb-4">
+                <span id="modal-badge" class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full">ประเภทความสัมพันธ์</span>
+                <span id="modal-symbol" class="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">( + / + )</span>
+            </div>
+            <h3 id="modal-title" class="text-2xl font-bold text-slate-900 mb-3">ชื่อภาวะ</h3>
+            <p id="modal-desc" class="text-slate-600 text-sm leading-relaxed mb-6">
+                คำอธิบายรายละเอียด...
+            </p>
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6">
+                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ตัวอย่างเพิ่มเติมในธรรมชาติ:</h4>
+                <ul id="modal-examples" class="text-sm text-slate-700 space-y-2">
+                    <!-- Dynamic examples list -->
+                </ul>
+            </div>
+            <button onclick="closeDetailModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-xl transition">
+                เข้าใจแล้ว
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer Updated Developer Name -->
+    <footer class="bg-slate-900 text-slate-400 py-10 px-4 sm:px-6 lg:px-8 mt-20 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-600 text-white p-2.5 rounded-xl">
+                    <i class="fa-solid fa-leaf"></i>
+                </div>
+                <div>
+                    <span class="text-white font-bold text-lg">EcoRelations Dashboard</span>
+                    <p class="text-xs text-slate-400">แหล่งเรียนรู้ระบบนิเวศและความสัมพันธ์ของสิ่งมีชีวิต</p>
+                </div>
+            </div>
+            <p class="text-sm text-slate-300 font-medium text-center md:text-right">
+                พัฒนาขึ้นโดย Metawat Phongsaphang
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Filter functionality for cards
+        function filterCards(category) {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-emerald-700', 'text-white', 'shadow');
+                btn.classList.add('bg-white', 'text-slate-700', 'border', 'border-slate-200', 'hover:bg-slate-100');
+            });
+            event.target.classList.remove('bg-white', 'text-slate-700', 'border', 'border-slate-200', 'hover:bg-slate-100');
+            event.target.classList.add('bg-emerald-700', 'text-white', 'shadow');
+
+            const cards = document.querySelectorAll('.relation-card');
+            cards.forEach(card => {
+                const categories = card.getAttribute('data-category');
+                if (category === 'all' || categories.includes(category)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Modal functionality
+        function openDetailModal(title, symbol, desc, examples) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-symbol').innerText = symbol;
+            document.getElementById('modal-desc').innerText = desc;
+            
+            const badge = document.getElementById('modal-badge');
+            badge.innerText = title.split(' ')[0] + ' ' + title.split(' ')[1];
+
+            const examplesList = document.getElementById('modal-examples');
+            examplesList.innerHTML = '';
+            examples.forEach(ex => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start';
+                li.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mt-1 mr-2 flex-shrink-0"></i> <span>${ex}</span>`;
+                examplesList.appendChild(li);
+            });
+
+            document.getElementById('detail-modal').classList.remove('hidden');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+        }
+
+        // Close modal on click outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('detail-modal');
+            if (event.target === modal) {
+                closeDetailModal();
+            }
+        }
+
+        // Quiz Data & Logic
+        const quizData = [
+            {
+                question: "นกเอี้ยงกับควายป่า โดยนกเอี้ยงกินแมลงบนหลังควาย เป็นความสัมพันธ์รูปแบบใด?",
+                options: [
+                    "ภาวะพึ่งพากัน (+/+)",
+                    "ภาวะได้ประโยชน์ร่วมกัน (+/+ แยกกันได้)",
+                    "ภาวะปรสิต (+/-)",
+                    "ภาวะอิงอาศัย (+/0)"
+                ],
+                correct: 1
+            },
+            {
+                question: "ฉลามกับเหาฉลามที่อาศัยเกาะกินเศษอาหารจากฉลาม จัดเป็นความสัมพันธ์แบบใด?",
+                options: [
+                    "ภาวะล่าเหยื่อ (+/-)",
+                    "ภาวะพึ่งพากัน (+/+)",
+                    "ภาวะอิงอาศัย (+/0)",
+                    "ภาวะการแข่งขัน (-/-)"
+                ],
+                correct: 2
+            },
+            {
+                question: "กาฝากที่เกาะอยู่บนต้นมะม่วงและคอยดูดน้ำเลี้ยงจัดเป็นความสัมพันธ์แบบใด?",
+                options: [
+                    "ภาวะปรสิต (+/-)",
+                    "ภาวะอิงอาศัย (+/0)",
+                    "ภาวะการแข่งขัน (-/-)",
+                    "ภาวะพึ่งพากัน (+/+)"
+                ],
+                correct: 0
+            },
+            {
+                question: "ต้นไม้ใหญ่ในป่าทึบที่ต่างแย่งกันรับแสงแดด จัดอยู่ในความสัมพันธ์แบบใด?",
+                options: [
+                    "ภาวะหลั่งสารยับยั้ง (-/0)",
+                    "ภาวะการแข่งขัน (-/-)",
+                    "ภาวะล่าเหยื่อ (+/-)",
+                    "ภาวะได้ประโยชน์ร่วมกัน (+/+)"
+                ],
+                correct: 1
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+
+        function loadQuiz() {
+            if (currentQuestion < quizData.length) {
+                const q = quizData[currentQuestion];
+                document.getElementById('quiz-progress').innerText = `คำถามข้อที่ ${currentQuestion + 1} / ${quizData.length}`;
+                document.getElementById('quiz-score').innerText = `คะแนน: ${score}`;
+                document.getElementById('quiz-question-text').innerText = q.question;
+
+                const optionsContainer = document.getElementById('quiz-options');
+                optionsContainer.innerHTML = '';
+
+                q.options.forEach((opt, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'bg-white/10 hover:bg-white/20 border border-white/20 text-white p-3.5 rounded-xl text-left text-sm font-medium transition flex items-center justify-between group';
+                    btn.innerHTML = `<span>${opt}</span> <i class="fa-solid fa-chevron-right text-xs opacity-50 group-hover:opacity-100"></i>`;
+                    btn.onclick = () => selectAnswer(index, q.correct);
+                    optionsContainer.appendChild(btn);
+                });
+            } else {
+                document.getElementById('quiz-question-box').classList.add('hidden');
+                document.getElementById('quiz-result-box').classList.remove('hidden');
+                document.getElementById('quiz-final-score').innerText = `คุณทำคะแนนได้ ${score} / ${quizData.length} คะแนน`;
+            }
+        }
+
+        function selectAnswer(selected, correct) {
+            if (selected === correct) {
+                score++;
+            }
+            currentQuestion++;
+            loadQuiz();
+        }
+
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            document.getElementById('quiz-result-box').classList.add('hidden');
+            document.getElementById('quiz-question-box').classList.remove('hidden');
+            loadQuiz();
+        }
+
+        // Initialize Quiz on load
+        window.onload = function() {
+            loadQuiz();
+        };
+    </script>
+</body>
+</html>
