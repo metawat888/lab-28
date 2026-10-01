@@ -115,7 +115,7 @@
                         <span class="text-[10px] sm:text-sm">สิ่งมีชีวิตที่ 1</span>
                     </span>
                     <div id="slot1-content" class="absolute inset-0 hidden">
-                        <img id="slot1-img" src="" class="w-full h-full object-cover" />
+                        <div id="slot1-media" class="absolute inset-0 -z-10"></div>
                         <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex items-end justify-center pb-2 sm:pb-3">
                             <span id="slot1-name" class="text-white font-bold text-xs sm:text-lg drop-shadow-lg"></span>
                         </div>
@@ -137,7 +137,7 @@
                         <span class="text-[10px] sm:text-sm">สิ่งมีชีวิตที่ 2</span>
                     </span>
                     <div id="slot2-content" class="absolute inset-0 hidden">
-                        <img id="slot2-img" src="" class="w-full h-full object-cover" />
+                        <div id="slot2-media" class="absolute inset-0 -z-10"></div>
                         <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex items-end justify-center pb-2 sm:pb-3">
                             <span id="slot2-name" class="text-white font-bold text-xs sm:text-lg drop-shadow-lg"></span>
                         </div>
@@ -463,8 +463,7 @@
                 console.warn(`Wiki fetch failed for ${org.name}, generating visual card...`);
             }
 
-            // แผนสุดท้าย: สร้างการ์ดสวยงามทดแทน
-            const parent = img.parentElement;
+            // แผนสุดท้าย: สร้างการ์ดสวยงามทดแทน (เปลี่ยนเฉพาะรูป ไม่ให้ทับ UI อื่นๆ)
             let iconName = 'paw-print';
             let bgColors = "from-slate-800 to-slate-900";
             if (org.category === 'mammal') { iconName = 'paw-print'; bgColors = "from-amber-900/80 to-amber-950"; }
@@ -474,12 +473,14 @@
             else if (org.category === 'plant') { iconName = 'leaf'; bgColors = "from-green-900/80 to-green-950"; }
             else if (org.category === 'microbe') { iconName = 'microscope'; bgColors = "from-purple-900/80 to-purple-950"; }
 
-            parent.innerHTML = `
-                <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br ${bgColors} text-slate-300">
-                    <i data-lucide="${iconName}" class="w-8 h-8 mb-2 opacity-50 drop-shadow-md"></i>
-                    <span class="text-[10px] sm:text-xs font-bold text-center px-2 leading-tight drop-shadow-md">${org.name}</span>
-                </div>
+            const fallbackDiv = document.createElement('div');
+            fallbackDiv.className = `w-full h-full flex flex-col items-center justify-center bg-gradient-to-br ${bgColors} text-slate-300 transition-transform duration-700 group-hover:scale-110`;
+            fallbackDiv.innerHTML = `
+                <i data-lucide="${iconName}" class="w-8 h-8 mb-2 opacity-50 drop-shadow-md"></i>
+                <span class="text-[10px] sm:text-xs font-bold text-center px-2 leading-tight drop-shadow-md pb-3">${org.name}</span>
             `;
+            
+            img.replaceWith(fallbackDiv);
             lucide.createIcons();
         }
 
@@ -584,20 +585,30 @@
                 const container = document.getElementById(`slot${slotNum}-container`);
                 const empty = document.getElementById(`slot${slotNum}-empty`);
                 const content = document.getElementById(`slot${slotNum}-content`);
-                const img = document.getElementById(`slot${slotNum}-img`);
+                const mediaBox = document.getElementById(`slot${slotNum}-media`);
                 const name = document.getElementById(`slot${slotNum}-name`);
 
                 if (slotData) {
                     empty.classList.add('hidden');
                     content.classList.remove('hidden');
-                    img.src = getProxyImageUrl(slotData.images[0]);
                     name.textContent = slotData.name;
                     container.classList.add('border-cyan-500', 'slot-active');
                     container.classList.remove('border-slate-700', 'border-dashed');
+
+                    // ดึงภาพจากคลัง (ตัวที่โชว์ผ่านแล้ว) มาใส่ในช่องจับคู่โดยตรง
+                    mediaBox.innerHTML = '';
+                    const invCard = document.getElementById(`card-${slotData.id}`);
+                    if (invCard && invCard.firstElementChild) {
+                        const clonedMedia = invCard.firstElementChild.cloneNode(true);
+                        if (clonedMedia.tagName === 'IMG') {
+                            clonedMedia.className = "w-full h-full object-cover transition-transform duration-700 group-hover:scale-110";
+                        }
+                        mediaBox.appendChild(clonedMedia);
+                    }
                 } else {
                     empty.classList.remove('hidden');
                     content.classList.add('hidden');
-                    img.src = '';
+                    mediaBox.innerHTML = '';
                     container.classList.remove('border-cyan-500', 'slot-active');
                     container.classList.add('border-slate-700', 'border-dashed');
                 }
