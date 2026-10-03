@@ -263,9 +263,9 @@
             { id: 'zebra', name: 'ม้าลาย', category: 'mammal', traits: ['herbivore', 'prey'], wikiPage: 'Zebra', images: ['https://images.unsplash.com/photo-1501705388883-4ed8a543392c'] },
             { id: 'dog', name: 'สุนัข', category: 'mammal', traits: ['omnivore', 'host'], wikiPage: 'Dog', images: ['https://images.unsplash.com/photo-1543466835-00a7907e9de1'] },
             { id: 'elephant', name: 'ช้างป่า', category: 'mammal', traits: ['herbivore', 'large_herbivore'], wikiPage: 'Elephant', images: ['https://images.unsplash.com/photo-1557050543-4d5f4e07ef46'] },
-            { id: 'cheetah', name: 'ชีตาห์', category: 'mammal', traits: ['carnivore', 'predator'], wikiPage: 'Cheetah', images: ['https://images.unsplash.com/photo-1534188753412-3e26d0d618d6'] },
+            { id: 'cheetah', name: 'เสือชีตาห์', category: 'mammal', traits: ['carnivore', 'predator'], wikiPage: 'Cheetah', images: ['https://upload.wikimedia.org/wikipedia/commons/1/11/Cheetah_Kruger.jpg?utm_source=th.wikipedia.org&utm_campaign=index&utm_content=original'] },
             { id: 'hippo', name: 'ฮิปโป', category: 'mammal', traits: ['herbivore', 'large_herbivore'], wikiPage: 'Hippopotamus', images: ['https://images.unsplash.com/photo-1603503364272-6e279d3910c2'] },
-            { id: 'human', name: 'มนุษย์', category: 'mammal', traits: ['omnivore', 'apex', 'host'], wikiPage: 'Human', images: ['https://images.unsplash.com/photo-1542909168-82c3e7fdca5c'] },
+            { id: 'human', name: 'มนุษย์', category: 'mammal', traits: ['omnivore', 'apex', 'host'], wikiPage: 'Human', images: ['image_aad7dc.jpg'] },
             { id: 'bear', name: 'หมี', category: 'mammal', traits: ['omnivore', 'apex'], wikiPage: 'Bear', images: ['https://images.unsplash.com/photo-1589656966895-2f33e7653819'] },
             { id: 'wolf', name: 'หมาป่า', category: 'mammal', traits: ['carnivore', 'predator'], wikiPage: 'Wolf', images: ['https://images.unsplash.com/photo-1564292100808-66258d5cf420'] },
             { id: 'fox', name: 'จิ้งจอก', category: 'mammal', traits: ['omnivore', 'predator'], wikiPage: 'Red_fox', images: ['https://images.unsplash.com/photo-1474511320723-9a56873867b5'] },
@@ -439,6 +439,7 @@
 
         // --- Zero-Lag System & Image Fallbacks ---
         function getProxyImageUrl(url) {
+            if (!url.startsWith('http')) return url; // ป้องกันการใส่ Proxy ให้ไฟล์ Local (เช่น image_aad7dc.jpg)
             return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=400&h=400&fit=cover&output=webp`;
         }
 
