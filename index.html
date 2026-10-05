@@ -1,5 +1,52 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Info, X, CheckCircle, Leaf, PawPrint, Fish, Bug, Bird, Microscope, Activity, ScanLine, FlaskConical, Cpu, BookOpen, Dna } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Ecology Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>body { margin: 0; padding: 0; }</style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+const { useState, useMemo, useEffect, useRef } = React;
+
+const LucideIcon = ({ name, className }) => {
+    const iconRef = useRef(null);
+    useEffect(() => {
+        if (iconRef.current && window.lucide) {
+            const i = document.createElement('i');
+            i.setAttribute('data-lucide', name);
+            if (className) i.setAttribute('class', className);
+            iconRef.current.innerHTML = '';
+            iconRef.current.appendChild(i);
+            window.lucide.createIcons({ root: iconRef.current });
+        }
+    }, [name, className]);
+    return <span ref={iconRef} style={{ display: 'contents' }}></span>;
+};
+
+const Search = (p) => <LucideIcon name="search" {...p} />;
+const Info = (p) => <LucideIcon name="info" {...p} />;
+const X = (p) => <LucideIcon name="x" {...p} />;
+const CheckCircle = (p) => <LucideIcon name="check-circle" {...p} />;
+const Leaf = (p) => <LucideIcon name="leaf" {...p} />;
+const PawPrint = (p) => <LucideIcon name="paw-print" {...p} />;
+const Fish = (p) => <LucideIcon name="fish" {...p} />;
+const Bug = (p) => <LucideIcon name="bug" {...p} />;
+const Bird = (p) => <LucideIcon name="bird" {...p} />;
+const Microscope = (p) => <LucideIcon name="microscope" {...p} />;
+const Activity = (p) => <LucideIcon name="activity" {...p} />;
+const ScanLine = (p) => <LucideIcon name="scan-line" {...p} />;
+const FlaskConical = (p) => <LucideIcon name="flask-conical" {...p} />;
+const Cpu = (p) => <LucideIcon name="cpu" {...p} />;
+const BookOpen = (p) => <LucideIcon name="book-open" {...p} />;
+const Dna = (p) => <LucideIcon name="dna" {...p} />;
 
 const traitDictionary = {
   'carnivore': 'สัตว์กินเนื้อ (Carnivore)',
@@ -319,7 +366,7 @@ const getMatchResult = (org1, org2) => {
   return { type: 'neutralism', detail: `สิ่งมีชีวิตทั้งสองอาจอาศัยในแหล่งเดียวกัน แต่มีความเป็นอยู่แยกกันชัดเจน ไม่มีปฏิสัมพันธ์ที่ส่งผลกระทบต่อกัน` };
 };
 
-export default function App() {
+function App() {
   const [slot1, setSlot1] = useState(null);
   const [slot2, setSlot2] = useState(null);
   const [result, setResult] = useState(null);
@@ -681,3 +728,8 @@ export default function App() {
     </div>
   );
 }
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
