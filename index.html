@@ -1,53 +1,411 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard ระบบนิเวศ - AI Lab</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, Info, X, CheckCircle, Leaf, PawPrint, Fish, Bug, Bird, Microscope, Activity, ScanLine, FlaskConical, Cpu, BookOpen, Dna } from 'lucide-react';
 
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+const traitDictionary = {
+  'carnivore': 'สัตว์กินเนื้อ (Carnivore)',
+  'herbivore': 'สัตว์กินพืช (Herbivore)',
+  'omnivore': 'กินพืชและเนื้อ (Omnivore)',
+  'scavenger': 'สัตว์กินซาก (Scavenger)',
+  'apex': 'ผู้ล่าลำดับสูงสุด (Apex Predator)',
+  'predator': 'นักล่า (Predator)',
+  'prey': 'เหยื่อ (Prey)',
+  'host': 'ผู้ถูกอาศัย (Host)',
+  'parasite': 'ปรสิต (Parasite)',
+  'pollinator': 'ผู้ช่วยผสมเกสร (Pollinator)',
+  'producer': 'ผู้ผลิต (Producer)',
+  'decomposer': 'ผู้ย่อยสลาย (Decomposer)',
+  'marine_host': 'โฮสต์ในทะเล (Marine Host)',
+  'shelter_provider': 'ผู้ให้ที่อยู่อาศัย',
+  'filter_feeder': 'สัตว์กรองกิน (Filter Feeder)',
+  'cleaner': 'ผู้ทำความสะอาด (Cleaner)',
+  'nest_builder': 'นักสร้างรัง (Nest Builder)',
+  'hitchhiker': 'ผู้เกาะติด (Hitchhiker)',
+  'anemone_dweller': 'ผู้อาศัยในดอกไม้ทะเล',
+  'shell_dweller': 'ผู้อาศัยในเปลือกหอย',
+  'tree': 'ไม้ยืนต้น (Tree)',
+  'epiphyte': 'พืชอิงอาศัย (Epiphyte)',
+  'nectar_provider': 'ผู้ให้น้ำหวาน',
+  'prey_plant': 'พืชอาหาร',
+  'parasitic_plant': 'พืชเบียน/กาฝาก',
+  'tree_killer': 'นักฆ่าต้นไม้',
+  'desert_plant': 'พืชทนแล้ง',
+  'carnivorous_plant': 'พืชกินสัตว์',
+  'lichen_part': 'องค์ประกอบไลเคน',
+  'nitrogen_fixer': 'ผู้ตรึงไนโตรเจน',
+  'legume': 'พืชตระกูลถั่ว',
+  'consumer': 'ผู้บริโภค (Consumer)',
+  'micro_predator': 'ผู้ล่าขนาดจิ๋ว',
+  'cellulose_digester': 'ผู้ย่อยเซลลูโลส',
+  'insectivore': 'สัตว์กินแมลง (Insectivore)',
+  'large_herbivore': 'สัตว์กินพืชขนาดใหญ่',
+  'detritivore': 'ผู้บริโภคซากอินทรีย์'
+};
 
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #020617;
-            color: #e2e8f0;
-            overflow: hidden;
-            /* Animated Lab Background */
-            background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #020617 100%);
-            background-size: 200% 200%;
-            animation: moveBackground 15s ease infinite;
+const relationshipTypes = [
+  { id: 'mutualism', name: 'ได้ประโยชน์ร่วมกัน', symbols: '(+, +)', desc: 'พึ่งพากันและกัน ขาดกันไม่ได้ หากแยกกันจะตายหรือดำรงชีวิตลำบาก', color: 'text-green-400', glow: 'shadow-[0_0_30px_rgba(74,222,128,0.2)]', bg: 'bg-green-500/10', border: 'border-green-500/30' },
+  { id: 'protocooperation', name: 'ได้ประโยชน์ร่วมกัน', symbols: '(+, +)', desc: 'ช่วยเหลือกัน ได้ประโยชน์ทั้งคู่ แต่สามารถแยกกันอยู่ได้โดยไม่ตาย', color: 'text-emerald-400', glow: 'shadow-[0_0_30px_rgba(52,211,153,0.2)]', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+  { id: 'commensalism', name: 'ภาวะอิงอาศัย', symbols: '(+, 0)', desc: 'ฝ่ายหนึ่งได้ประโยชน์ อีกฝ่ายไม่ได้และไม่เสียประโยชน์ (เฉยๆ)', color: 'text-blue-400', glow: 'shadow-[0_0_30px_rgba(96,165,250,0.2)]', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
+  { id: 'predation', name: 'ภาวะล่าเหยื่อ', symbols: '(+, -)', desc: 'ผู้ล่าได้อาหาร (ประโยชน์) ส่วนเหยื่อถูกกิน (เสียประโยชน์/ตาย)', color: 'text-red-400', glow: 'shadow-[0_0_30px_rgba(248,113,113,0.2)]', bg: 'bg-red-500/10', border: 'border-red-500/30' },
+  { id: 'parasitism', name: 'ภาวะปรสิต', symbols: '(+, -)', desc: 'ปรสิตแฝงตัวดูดสารอาหาร โฮสต์เสียประโยชน์และอ่อนแอลง', color: 'text-orange-400', glow: 'shadow-[0_0_30px_rgba(251,146,60,0.2)]', bg: 'bg-orange-500/10', border: 'border-orange-500/30' },
+  { id: 'competition', name: 'ภาวะแก่งแย่ง', symbols: '(-, -)', desc: 'แย่งชิงทรัพยากรที่จำกัด ทำให้เสียประโยชน์และอ่อนแอกันทั้่งคู่', color: 'text-purple-400', glow: 'shadow-[0_0_30px_rgba(192,132,252,0.2)]', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
+  { id: 'neutralism', name: 'ภาวะเป็นกลาง', symbols: '(0, 0)', desc: 'อาศัยในแหล่งเดียวกันแต่ไม่มีปฏิสัมพันธ์หรือผลกระทบต่อกัน', color: 'text-slate-300', glow: 'shadow-[0_0_30px_rgba(203,213,225,0.1)]', bg: 'bg-slate-500/10', border: 'border-slate-500/30' }
+];
+
+const categories = [
+  { id: 'all', name: 'ทั้งหมด', icon: Search },
+  { id: 'mammal', name: 'สัตว์บก', icon: PawPrint },
+  { id: 'bird', name: 'นก', icon: Bird },
+  { id: 'marine', name: 'สัตว์น้ำ', icon: Fish },
+  { id: 'insect', name: 'แมลง', icon: Bug },
+  { id: 'plant', name: 'พืช', icon: Leaf },
+  { id: 'microbe', name: 'จุลินทรีย์', icon: Microscope }
+];
+
+const organisms = [
+  // สัตว์บก (24 ชนิด)
+  { id: 'tiger', name: 'เสือโคร่ง', category: 'mammal', traits: ['carnivore', 'apex'], wikiPage: 'Tiger', images: ['https://images.unsplash.com/photo-1561731216-c3a4d99437d5'] },
+  { id: 'deer', name: 'กวางป่า', category: 'mammal', traits: ['herbivore', 'prey'], wikiPage: 'Chital', images: ['https://images.unsplash.com/photo-1484406561408-79548cb5a34e'] },
+  { id: 'buffalo', name: 'ควายป่า', category: 'mammal', traits: ['herbivore', 'host'], wikiPage: 'African_buffalo', images: ['https://images.unsplash.com/photo-1596700770514-9b22b27dfc6f'] },
+  { id: 'lion', name: 'สิงโต', category: 'mammal', traits: ['carnivore', 'apex'], wikiPage: 'Lion', images: ['https://images.unsplash.com/photo-1546182990-dffeafbe841d'] },
+  { id: 'hyena', name: 'ไฮยีน่า', category: 'mammal', traits: ['carnivore', 'scavenger'], wikiPage: 'Spotted_hyena', images: ['https://images.unsplash.com/photo-1599818815187-57ed06da0ba3'] },
+  { id: 'rhino', name: 'แรด', category: 'mammal', traits: ['herbivore', 'host'], wikiPage: 'White_rhinoceros', images: ['https://images.unsplash.com/photo-1534062569269-a1b73010b991'] },
+  { id: 'zebra', name: 'ม้าลาย', category: 'mammal', traits: ['herbivore', 'prey'], wikiPage: 'Zebra', images: ['https://images.unsplash.com/photo-1501705388883-4ed8a543392c'] },
+  { id: 'dog', name: 'สุนัข', category: 'mammal', traits: ['omnivore', 'host'], wikiPage: 'Dog', images: ['https://images.unsplash.com/photo-1543466835-00a7907e9de1'] },
+  { id: 'elephant', name: 'ช้างป่า', category: 'mammal', traits: ['herbivore', 'large_herbivore'], wikiPage: 'Elephant', images: ['https://images.unsplash.com/photo-1557050543-4d5f4e07ef46'] },
+  { id: 'cheetah', name: 'เสือชีตาห์', category: 'mammal', traits: ['carnivore', 'predator'], wikiPage: 'Cheetah', images: ['https://upload.wikimedia.org/wikipedia/commons/1/11/Cheetah_Kruger.jpg'] },
+  { id: 'hippo', name: 'ฮิปโป', category: 'mammal', traits: ['herbivore', 'large_herbivore'], wikiPage: 'Hippopotamus', images: ['https://images.unsplash.com/photo-1603503364272-6e279d3910c2'] },
+  { id: 'human', name: 'มนุษย์', category: 'mammal', traits: ['omnivore', 'apex', 'host'], wikiPage: 'Human', images: ['image_aad7dc.jpg'] },
+  { id: 'bear', name: 'หมี', category: 'mammal', traits: ['omnivore', 'apex'], wikiPage: 'Bear', images: ['https://images.unsplash.com/photo-1589656966895-2f33e7653819'] },
+  { id: 'wolf', name: 'หมาป่า', category: 'mammal', traits: ['carnivore', 'predator'], wikiPage: 'Wolf', images: ['https://images.unsplash.com/photo-1564292100808-66258d5cf420'] },
+  { id: 'fox', name: 'จิ้งจอก', category: 'mammal', traits: ['omnivore', 'predator'], wikiPage: 'Red_fox', images: ['https://images.unsplash.com/photo-1474511320723-9a56873867b5'] },
+  { id: 'rabbit', name: 'กระต่าย', category: 'mammal', traits: ['herbivore', 'prey'], wikiPage: 'Rabbit', images: ['https://images.unsplash.com/photo-1585110396000-c9fd4e4e5030'] },
+  { id: 'squirrel', name: 'กระรอก', category: 'mammal', traits: ['herbivore', 'prey'], wikiPage: 'Squirrel', images: ['https://images.unsplash.com/photo-1507666405895-422eee7d517f'] },
+  { id: 'bat', name: 'ค้างคาว', category: 'mammal', traits: ['omnivore', 'pollinator'], wikiPage: 'Bat', images: ['https://images.unsplash.com/photo-1604085449557-0a256d0d2dd0'] },
+  { id: 'monkey', name: 'ลิง', category: 'mammal', traits: ['omnivore', 'prey'], wikiPage: 'Monkey', images: ['https://images.unsplash.com/photo-1540573133985-87b6da6d54a9'] },
+  { id: 'crocodile', name: 'จระเข้', category: 'mammal', traits: ['carnivore', 'apex'], wikiPage: 'Crocodile', images: ['https://images.unsplash.com/photo-1521406560416-5bc50ceeb45a'] },
+  { id: 'snake', name: 'งู', category: 'mammal', traits: ['carnivore', 'predator'], wikiPage: 'Snake', images: ['https://images.unsplash.com/photo-1535268647677-300df73e8de2'] },
+  { id: 'frog', name: 'กบ', category: 'mammal', traits: ['insectivore', 'prey'], wikiPage: 'Frog', images: ['https://images.unsplash.com/photo-1578278278453-e31350849495'] },
+  { id: 'iguana', name: 'อีกัวน่า', category: 'mammal', traits: ['herbivore', 'prey'], wikiPage: 'Iguana', images: ['https://images.unsplash.com/photo-1516108182740-410a08e06399'] },
+  { id: 'chameleon', name: 'กิ้งก่า', category: 'mammal', traits: ['insectivore', 'predator'], wikiPage: 'Chameleon', images: ['https://images.unsplash.com/photo-1547021750-b08e24dc1cba'] },
+  
+  // นก (16 ชนิด)
+  { id: 'myna', name: 'นกเอี้ยง', category: 'bird', traits: ['omnivore', 'cleaner'], wikiPage: 'Common_myna', images: ['https://images.unsplash.com/photo-1550853024-fae8cd4be47f'] },
+  { id: 'eagle', name: 'นกอินทรี', category: 'bird', traits: ['carnivore', 'apex'], wikiPage: 'Golden_eagle', images: ['https://images.unsplash.com/photo-1611689342806-0863700ce1e4'] },
+  { id: 'vulture', name: 'อีแร้ง', category: 'bird', traits: ['scavenger'], wikiPage: 'Vulture', images: ['https://images.unsplash.com/photo-1598463836709-66170d56ee13'] },
+  { id: 'hummingbird', name: 'นกฮัมมิงเบิร์ด', category: 'bird', traits: ['herbivore', 'pollinator'], wikiPage: 'Hummingbird', images: ['https://images.unsplash.com/photo-1543007168-5fa8b3c3f589'] },
+  { id: 'woodpecker', name: 'นกหัวขวาน', category: 'bird', traits: ['insectivore', 'nest_builder'], wikiPage: 'Woodpecker', images: ['https://images.unsplash.com/photo-1616223164998-3860bb6f98af'] },
+  { id: 'owl', name: 'นกฮูก', category: 'bird', traits: ['carnivore', 'predator'], wikiPage: 'Owl', images: ['https://images.unsplash.com/photo-1590513886566-6644f1cbe2d3'] },
+  { id: 'ostrich', name: 'นกกระจอกเทศ', category: 'bird', traits: ['omnivore', 'prey'], wikiPage: 'Ostrich', images: ['https://images.unsplash.com/photo-1548174411-cf49fb753d08'] },
+  { id: 'penguin', name: 'เพนกวิน', category: 'bird', traits: ['carnivore', 'prey'], wikiPage: 'Penguin', images: ['https://images.unsplash.com/photo-1551410217-1f48ed2d2949'] },
+  { id: 'pelican', name: 'นกกระทุง', category: 'bird', traits: ['carnivore', 'predator'], wikiPage: 'Pelican', images: ['https://images.unsplash.com/photo-1579219665646-608f62f3f752'] },
+  { id: 'parrot', name: 'นกแก้ว', category: 'bird', traits: ['herbivore', 'prey'], wikiPage: 'Parrot', images: ['https://images.unsplash.com/photo-1521190432128-4ce3df997420'] },
+  { id: 'crow', name: 'อีกา', category: 'bird', traits: ['omnivore', 'scavenger'], wikiPage: 'Crow', images: ['https://images.unsplash.com/photo-1582236852445-31a892795f7c'] },
+  { id: 'duck', name: 'เป็ด', category: 'bird', traits: ['omnivore', 'prey'], wikiPage: 'Duck', images: ['https://images.unsplash.com/photo-1518314115160-c4819dfb4cb2'] },
+  { id: 'swan', name: 'หงส์', category: 'bird', traits: ['herbivore', 'prey'], wikiPage: 'Swan', images: ['https://images.unsplash.com/photo-1510202279148-3a8126b86ce9'] },
+  { id: 'flamingo', name: 'ฟลามิงโก', category: 'bird', traits: ['carnivore', 'filter_feeder'], wikiPage: 'Flamingo', images: ['https://images.unsplash.com/photo-1497206103366-0772714c679b'] },
+  { id: 'peacock', name: 'นกยูง', category: 'bird', traits: ['omnivore', 'prey'], wikiPage: 'Peafowl', images: ['https://images.unsplash.com/photo-1502219684198-422eee7d517f'] },
+  { id: 'pigeon', name: 'นกพิราบ', category: 'bird', traits: ['omnivore', 'prey'], wikiPage: 'Rock_dove', images: ['https://images.unsplash.com/photo-1555580644-88f572979201'] },
+
+  // แมลง (25 ชนิด)
+  { id: 'tick', name: 'เห็บ', category: 'insect', traits: ['parasite'], wikiPage: 'Tick', images: ['https://images.unsplash.com/photo-1621251919864-4630a9fa93e2'] },
+  { id: 'flea', name: 'หมัด', category: 'insect', traits: ['parasite'], wikiPage: 'Flea', images: ['https://images.unsplash.com/photo-1587847307044-77e8d26fb51e'] },
+  { id: 'bee', name: 'ผึ้ง', category: 'insect', traits: ['herbivore', 'pollinator'], wikiPage: 'Bee', images: ['https://images.unsplash.com/photo-1587522543161-07736f3ce013'] },
+  { id: 'butterfly', name: 'ผีเสื้อ', category: 'insect', traits: ['herbivore', 'pollinator'], wikiPage: 'Butterfly', images: ['https://images.unsplash.com/photo-1552504812-32a26514757c'] },
+  { id: 'mantis', name: 'ตั๊กแตนตำข้าว', category: 'insect', traits: ['carnivore', 'predator'], wikiPage: 'Mantis', images: ['https://images.unsplash.com/photo-1585848529288-0240d43ce1b1'] },
+  { id: 'caterpillar', name: 'หนอนผีเสื้อ', category: 'insect', traits: ['herbivore', 'prey', 'host'], wikiPage: 'Caterpillar', images: ['https://images.unsplash.com/photo-1580227914441-df071d38da70'] },
+  { id: 'mosquito', name: 'ยุง', category: 'insect', traits: ['parasite'], wikiPage: 'Mosquito', images: ['https://images.unsplash.com/photo-1510403714571-7006764724cb'] },
+  { id: 'spider', name: 'แมงมุม', category: 'insect', traits: ['carnivore', 'predator'], wikiPage: 'Spider', images: ['https://images.unsplash.com/photo-1515248109259-25f0a0715694'] },
+  { id: 'ladybug', name: 'เต่าทอง', category: 'insect', traits: ['carnivore', 'predator'], wikiPage: 'Coccinellidae', images: ['https://images.unsplash.com/photo-1542475027-802521e10260'] },
+  { id: 'ant', name: 'มด', category: 'insect', traits: ['omnivore', 'scavenger'], wikiPage: 'Ant', images: ['https://images.unsplash.com/photo-1506456070624-9b8823521a09'] },
+  { id: 'aphid', name: 'เพลี้ยอ่อน', category: 'insect', traits: ['herbivore', 'prey'], wikiPage: 'Aphid', images: ['https://images.unsplash.com/photo-1619565538338-7f938b8e0186'] },
+  { id: 'termite', name: 'ปลวก', category: 'insect', traits: ['herbivore', 'host', 'decomposer'], wikiPage: 'Termite', images: ['https://images.unsplash.com/photo-1616854972986-7b4487b22a00'] },
+  { id: 'grasshopper', name: 'ตั๊กแตน', category: 'insect', traits: ['herbivore', 'prey'], wikiPage: 'Grasshopper', images: ['https://images.unsplash.com/photo-1501700624107-1601725b84d4'] },
+  { id: 'dragonfly', name: 'แมลงปอ', category: 'insect', traits: ['carnivore', 'predator'], wikiPage: 'Dragonfly', images: ['https://images.unsplash.com/photo-1518002621495-231362e07897'] },
+  { id: 'fly', name: 'แมลงวัน', category: 'insect', traits: ['omnivore', 'scavenger'], wikiPage: 'Fly', images: ['https://images.unsplash.com/photo-1522080352528-912fcc0f62b4'] },
+  { id: 'centipede', name: 'ตะขาบ', category: 'insect', traits: ['carnivore', 'predator'], wikiPage: 'Centipede', images: ['https://images.unsplash.com/photo-1617469739501-c67be84fbffb'] },
+  { id: 'millipede', name: 'กิ้งกือ', category: 'insect', traits: ['detritivore', 'decomposer'], wikiPage: 'Millipede', images: ['https://images.unsplash.com/photo-1608678089408-e8a49ba8e08d'] },
+  { id: 'scorpion', name: 'แมงป่อง', category: 'insect', traits: ['carnivore', 'predator'], wikiPage: 'Scorpion', images: ['https://images.unsplash.com/photo-1605335035272-a720934f553a'] },
+  { id: 'beetle', name: 'ด้วง', category: 'insect', traits: ['herbivore', 'decomposer'], wikiPage: 'Beetle', images: ['https://images.unsplash.com/photo-1549420040-5b5832a4e231'] },
+  { id: 'cockroach', name: 'แมลงสาบ', category: 'insect', traits: ['omnivore', 'scavenger'], wikiPage: 'Cockroach', images: ['https://images.unsplash.com/photo-1614030616183-b710c0bfd91e'] },
+  { id: 'earthworm', name: 'ไส้เดือนดิน', category: 'insect', traits: ['detritivore', 'decomposer'], wikiPage: 'Earthworm', images: ['https://images.unsplash.com/photo-1598583488225-b873f1ff22bc'] },
+  { id: 'leech', name: 'ปลิง', category: 'insect', traits: ['parasite'], wikiPage: 'Leech', images: ['https://images.unsplash.com/photo-1627993214434-60144596328a'] },
+  { id: 'snail', name: 'หอยทาก', category: 'insect', traits: ['herbivore', 'prey'], wikiPage: 'Snail', images: ['https://images.unsplash.com/photo-1531633512399-56543b573e3a'] },
+  { id: 'slug', name: 'ทาก', category: 'insect', traits: ['herbivore', 'prey'], wikiPage: 'Slug', images: ['https://images.unsplash.com/photo-1590400030508-3f59edc1d763'] },
+  { id: 'moth', name: 'ผีเสื้อกลางคืน', category: 'insect', traits: ['herbivore', 'pollinator'], wikiPage: 'Moth', images: ['https://images.unsplash.com/photo-1563200787-19e075c3ef94'] },
+
+  // สัตว์ทะเล (15 ชนิด)
+  { id: 'shark', name: 'ฉลาม', category: 'marine', traits: ['carnivore', 'apex', 'marine_host'], wikiPage: 'Great_white_shark', images: ['https://images.unsplash.com/photo-1560275619-4662e36fa65c'] },
+  { id: 'remora', name: 'ปลาเหาฉลาม', category: 'marine', traits: ['scavenger', 'hitchhiker'], wikiPage: 'Remora', images: ['https://images.unsplash.com/photo-1577789312150-13651239eb87'] },
+  { id: 'clownfish', name: 'ปลาการ์ตูน', category: 'marine', traits: ['omnivore', 'anemone_dweller'], wikiPage: 'Ocellaris_clownfish', images: ['https://images.unsplash.com/photo-1544552866-d3ed42536fcb'] },
+  { id: 'anemone', name: 'ดอกไม้ทะเล', category: 'marine', traits: ['carnivore', 'shelter_provider'], wikiPage: 'Sea_anemone', images: ['https://images.unsplash.com/photo-1518012658826-5b61405e3b6a'] },
+  { id: 'whale', name: 'วาฬ', category: 'marine', traits: ['carnivore', 'marine_host'], wikiPage: 'Whale', images: ['https://images.unsplash.com/photo-1568430462989-44163eb1752f'] },
+  { id: 'barnacle', name: 'เพรียง', category: 'marine', traits: ['filter_feeder', 'hitchhiker'], wikiPage: 'Barnacle', images: ['https://images.unsplash.com/photo-1596752763784-a15e61ff3cd4'] },
+  { id: 'crab', name: 'ปูเสฉวน', category: 'marine', traits: ['scavenger', 'shell_dweller'], wikiPage: 'Hermit_crab', images: ['https://images.unsplash.com/photo-1601633534570-5b8d9600e163'] },
+  { id: 'dolphin', name: 'โลมา', category: 'marine', traits: ['carnivore', 'predator'], wikiPage: 'Dolphin', images: ['https://images.unsplash.com/photo-1570482606822-1d7d24d20917'] },
+  { id: 'turtle', name: 'เต่าทะเล', category: 'marine', traits: ['omnivore', 'marine_host'], wikiPage: 'Sea_turtle', images: ['https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f'] },
+  { id: 'coral', name: 'ปะการัง', category: 'marine', traits: ['filter_feeder', 'shelter_provider'], wikiPage: 'Coral', images: ['https://images.unsplash.com/photo-1546026423-cc4642628d2b'] },
+  { id: 'octopus', name: 'หมึกยักษ์', category: 'marine', traits: ['carnivore', 'predator'], wikiPage: 'Octopus', images: ['https://images.unsplash.com/photo-1545695864-fbbffb4009bb'] },
+  { id: 'jellyfish', name: 'แมงกะพรุน', category: 'marine', traits: ['carnivore', 'predator'], wikiPage: 'Jellyfish', images: ['https://images.unsplash.com/photo-1510444391629-dccff24f56f1'] },
+  { id: 'seahorse', name: 'ม้าน้ำ', category: 'marine', traits: ['carnivore', 'prey'], wikiPage: 'Seahorse', images: ['https://images.unsplash.com/photo-1575010667087-cb9907beab2b'] },
+  { id: 'squid', name: 'ปลาหมึก', category: 'marine', traits: ['carnivore', 'predator', 'prey'], wikiPage: 'Squid', images: ['https://images.unsplash.com/photo-1617056075924-f7b5bebfab5b'] },
+  { id: 'starfish', name: 'ปลาดาว', category: 'marine', traits: ['carnivore', 'decomposer'], wikiPage: 'Starfish', images: ['https://images.unsplash.com/photo-1555562095-2cceec28baee'] },
+
+  // พืช (12 ชนิด)
+  { id: 'tree', name: 'ต้นไม้ใหญ่', category: 'plant', traits: ['producer', 'tree'], wikiPage: 'Tree', images: ['https://images.unsplash.com/photo-1502082553048-f009c37129b9'] },
+  { id: 'orchid', name: 'กล้วยไม้', category: 'plant', traits: ['producer', 'epiphyte'], wikiPage: 'Orchid', images: ['https://images.unsplash.com/photo-1551893665-f843f600794e'] },
+  { id: 'flower', name: 'ดอกไม้', category: 'plant', traits: ['producer', 'nectar_provider'], wikiPage: 'Flower', images: ['https://images.unsplash.com/photo-1490750967868-8f5d484ec1a3'] },
+  { id: 'grass', name: 'หญ้า', category: 'plant', traits: ['producer', 'prey_plant'], wikiPage: 'Grass', images: ['https://images.unsplash.com/photo-1533460004989-cef0106097d6'] },
+  { id: 'rafflesia', name: 'ดอกบัวผุด', category: 'plant', traits: ['parasitic_plant'], wikiPage: 'Rafflesia', images: ['https://images.unsplash.com/photo-1596356561570-07ec82310f84'] },
+  { id: 'strangler_fig', name: 'ไทรย้อย', category: 'plant', traits: ['producer', 'tree_killer'], wikiPage: 'Strangler_fig', images: ['https://images.unsplash.com/photo-1626244799042-45e05086d4e2'] },
+  { id: 'cactus', name: 'กระบองเพชร', category: 'plant', traits: ['producer', 'desert_plant'], wikiPage: 'Cactus', images: ['https://images.unsplash.com/photo-1459411552884-841db9b3cc2a'] },
+  { id: 'venus_flytrap', name: 'กาบหอยแครง', category: 'plant', traits: ['carnivorous_plant', 'producer'], wikiPage: 'Venus_flytrap', images: ['https://images.unsplash.com/photo-1614006282869-2f22b7a8a816'] },
+  { id: 'fern', name: 'เฟิร์น', category: 'plant', traits: ['producer', 'epiphyte'], wikiPage: 'Fern', images: ['https://images.unsplash.com/photo-1579998188287-211756538965'] },
+  { id: 'pine', name: 'ต้นสน', category: 'plant', traits: ['producer', 'tree'], wikiPage: 'Pine', images: ['https://images.unsplash.com/photo-1543169720-d30560b45ddf'] },
+  { id: 'pitcher_plant', name: 'หม้อข้าวหม้อแกงลิง', category: 'plant', traits: ['carnivorous_plant', 'producer'], wikiPage: 'Pitcher_plant', images: ['https://images.unsplash.com/photo-1620610360814-1fbc8ebccf92'] },
+  { id: 'bamboo', name: 'ไผ่', category: 'plant', traits: ['producer', 'prey_plant'], wikiPage: 'Bamboo', images: ['https://images.unsplash.com/photo-1533722744955-463e26462615'] },
+
+  // จุลินทรีย์ ปรสิตภายใน (9 ชนิด)
+  { id: 'fungi', name: 'รา (Fungi)', category: 'microbe', traits: ['decomposer', 'lichen_part'], wikiPage: 'Fungus', images: ['https://images.unsplash.com/photo-1605806616949-1e87b487cb2a'] },
+  { id: 'algae', name: 'สาหร่าย', category: 'plant', traits: ['producer', 'lichen_part'], wikiPage: 'Algae', images: ['https://images.unsplash.com/photo-1617300705574-889816ec7c84'] },
+  { id: 'bacteria', name: 'แบคทีเรียปมราก', category: 'microbe', traits: ['nitrogen_fixer'], wikiPage: 'Root_nodule', images: ['https://images.unsplash.com/photo-1574246876359-541dd44b8253'] },
+  { id: 'legume', name: 'พืชตระกูลถั่ว', category: 'plant', traits: ['producer', 'legume'], wikiPage: 'Legume', images: ['https://images.unsplash.com/photo-1590502283084-256eb6009384'] },
+  { id: 'cordyceps', name: 'ราแมลง', category: 'microbe', traits: ['parasite'], wikiPage: 'Ophiocordyceps_sinensis', images: ['https://images.unsplash.com/photo-1634127027878-3a2181cfbc73'] },
+  { id: 'amoeba', name: 'อะมีบา', category: 'microbe', traits: ['consumer', 'micro_predator'], wikiPage: 'Amoeba', images: ['https://upload.wikimedia.org/wikipedia/commons/3/3f/Amoeba_proteus.jpg'] },
+  { id: 'virus', name: 'ไวรัส', category: 'microbe', traits: ['parasite'], wikiPage: 'Virus', images: ['https://images.unsplash.com/photo-1584036561566-baf8f5f1b144'] },
+  { id: 'trichonympha', name: 'โปรโตซัวไตรโคนิมฟา', category: 'microbe', traits: ['cellulose_digester'], wikiPage: 'Trichonympha', images: ['https://images.unsplash.com/photo-1614935151651-0bea6508abb0'] },
+  { id: 'tapeworm', name: 'พยาธิตัวตืด', category: 'microbe', traits: ['parasite'], wikiPage: 'Tapeworm', images: ['https://images.unsplash.com/photo-1574288070949-14a938ec494a'] }
+];
+
+const SafeImage = ({ organism, className }) => {
+  const [imgState, setImgState] = useState({ src: null, step: 0 });
+
+  useEffect(() => {
+    const imgUrl = organism.images[0];
+    if (imgUrl && imgUrl.startsWith('http')) {
+      setImgState({ 
+        src: `https://wsrv.nl/?url=${encodeURIComponent(imgUrl)}&w=400&h=400&fit=cover&output=webp`, 
+        step: 0 
+      });
+    } else {
+      setImgState({ src: imgUrl, step: 0 });
+    }
+  }, [organism]);
+
+  const handleError = async () => {
+    if (imgState.step === 0) {
+      try {
+        const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${organism.wikiPage}`);
+        if (!res.ok) throw new Error('Wiki API failed');
+        const data = await res.json();
+        if (data?.thumbnail?.source) {
+          setImgState({ src: data.thumbnail.source, step: 1 });
+        } else {
+          setImgState({ src: null, step: 2 });
         }
+      } catch (e) {
+        setImgState({ src: null, step: 2 });
+      }
+    } else if (imgState.step === 1) {
+      setImgState({ src: null, step: 2 });
+    }
+  };
+
+  if (imgState.step === 2 || !imgState.src) {
+    let Icon = PawPrint;
+    let bgColors = "from-slate-800 to-slate-900";
+    if (organism.category === 'mammal') { Icon = PawPrint; bgColors = "from-amber-900/80 to-amber-950"; }
+    else if (organism.category === 'bird') { Icon = Bird; bgColors = "from-sky-900/80 to-sky-950"; }
+    else if (organism.category === 'insect') { Icon = Bug; bgColors = "from-emerald-900/80 to-emerald-950"; }
+    else if (organism.category === 'marine') { Icon = Fish; bgColors = "from-blue-900/80 to-blue-950"; }
+    else if (organism.category === 'plant') { Icon = Leaf; bgColors = "from-green-900/80 to-green-950"; }
+    else if (organism.category === 'microbe') { Icon = Microscope; bgColors = "from-purple-900/80 to-purple-950"; }
+
+    return (
+      <div className={`w-full h-full flex flex-col items-center justify-center bg-gradient-to-br ${bgColors} text-slate-300 transition-transform duration-700 group-hover:scale-110 ${className}`}>
+        <Icon className="w-8 h-8 mb-2 opacity-50 drop-shadow-md" />
+        <span className="text-[10px] sm:text-xs font-bold text-center px-2 leading-tight drop-shadow-md pb-3">{organism.name}</span>
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      key={imgState.src}
+      src={imgState.src} 
+      alt={organism.name} 
+      className={className} 
+      onError={handleError}
+      loading="lazy"
+    />
+  );
+};
+
+const getMatchResult = (org1, org2) => {
+  if (!org1 || !org2) return null;
+  const ids = [org1.id, org2.id];
+  const t1 = org1.traits;
+  const t2 = org2.traits;
+  const c1 = org1.category;
+  const c2 = org2.category;
+  
+  // Specific Exact Matches
+  if (ids.includes('myna') && ids.includes('buffalo')) return { type: 'protocooperation', detail: 'นกเอี้ยงช่วยกินแมลงบนหลังควาย (ได้อาหาร) ส่วนควายสบายตัวขึ้น (กำจัดปรสิต) ทั้งคู่แยกกันอยู่ได้' };
+  if (ids.includes('shark') && ids.includes('remora')) return { type: 'commensalism', detail: 'ปลาเหาฉลามเกาะติดฉลามเพื่อกินเศษอาหารและได้ที่หลบภัย ส่วนฉลามไม่ได้และไม่เสียประโยชน์' };
+  if (ids.includes('clownfish') && ids.includes('anemone')) return { type: 'mutualism', detail: 'ปลาการ์ตูนหลบภัยในดอกไม้ทะเลและช่วยทำความสะอาด ดอกไม้ทะเลได้ปลาการ์ตูนล่อเหยื่อ ขาดกันไม่ได้ในธรรมชาติ' };
+  if (ids.includes('tree') && ids.includes('orchid')) return { type: 'commensalism', detail: 'กล้วยไม้อาศัยเกาะต้นไม้ใหญ่เพื่อให้ได้แสงแดด โดยไม่ได้แย่งอาหารจากต้นไม้ใหญ่' };
+  if ((ids.includes('tree') || ids.includes('pine')) && ids.includes('fern')) return { type: 'commensalism', detail: 'เฟิร์นเป็นพืชอิงอาศัย เกาะต้นไม้ใหญ่เพื่อให้ได้รับแสงแดด โดยไม่ได้แย่งอาหารหรือน้ำจากต้นไม้' };
+  if (ids.includes('fungi') && ids.includes('algae')) return { type: 'mutualism', detail: 'ราให้ความชื้นและที่ยึดเกาะ สาหร่ายสร้างอาหารจากการสังเคราะห์แสง (เกิดเป็น "ไลเคน") ต้องอยู่ร่วมกัน' };
+  if (ids.includes('bacteria') && ids.includes('legume')) return { type: 'mutualism', detail: 'แบคทีเรียไรโซเบียมในปมรากถั่วช่วยตรึงไนโตรเจนให้พืช พืชให้อาหารและที่อยู่อาศัยแก่แบคทีเรีย' };
+  if (ids.includes('tree') && ids.includes('strangler_fig')) return { type: 'parasitism', detail: 'ไทรย้อยเริ่มต้นจากการอิงอาศัย แต่เมื่อโตขึ้นจะแย่งแสงและรัดต้นไม้เดิมจนตาย (กาฝาก)' };
+  if (ids.includes('caterpillar') && ids.includes('cordyceps')) return { type: 'parasitism', detail: 'ราแมลง (Cordyceps) เข้าสิงและเติบโตในตัวหนอน ดูดกินสารอาหารจนหนอนตาย' };
+  if (ids.includes('ant') && ids.includes('aphid')) return { type: 'protocooperation', detail: 'มดคอยปกป้องเพลี้ยอ่อนจากศัตรู ส่วนเพลี้ยอ่อนให้น้ำหวาน (Honeydew) แก่มดเป็นอาหาร' };
+  if (ids.includes('termite') && ids.includes('trichonympha')) return { type: 'mutualism', detail: 'โปรโตซัวไตรโคนิมฟาในลำไส้ปลวกช่วยย่อยเซลลูโลสในไม้ ปลวกให้ที่อยู่อาศัยและอาหาร ขาดกันไม่ได้' };
+  if (ids.includes('human') && ids.includes('tapeworm')) return { type: 'parasitism', detail: 'พยาธิตัวตืดอาศัยในลำไส้มนุษย์ แย่งชิงสารอาหารและทำลายสุขภาพ' };
+
+  // AI Rule-based Matching
+  const hasTrait = (trait) => t1.includes(trait) || t2.includes(trait);
+  const getOpposite = (trait) => t1.includes(trait) ? org2 : org1;
+
+  if (hasTrait('carnivorous_plant') && (c1 === 'insect' || c2 === 'insect')) {
+    return { type: 'predation', detail: 'พืชกินแมลงทำการดักจับและย่อยสลายแมลงเพื่อนำแร่ธาตุมาเป็นอาหารเสริม' };
+  }
+
+  if (hasTrait('parasite')) {
+    if (hasTrait('host') || hasTrait('mammal') || hasTrait('bird') || hasTrait('prey') || hasTrait('marine_host')) {
+       return { type: 'parasitism', detail: `ปรสิตเกาะติดหรือดูดสารอาหารและทำอันตรายต่อโฮสต์ (${getOpposite('parasite').name} เสียสุขภาพและประโยชน์)` };
+    }
+  }
+
+  if (hasTrait('pollinator') && hasTrait('nectar_provider')) {
+    return { type: 'protocooperation', detail: `แมลง/นก ได้น้ำหวานเป็นอาหาร ส่วนพืชได้รับการผสมเกสรเพื่อให้ขยายพันธุ์ได้รวดเร็ว` };
+  }
+
+  if (hasTrait('carnivore') && hasTrait('herbivore')) {
+    return { type: 'predation', detail: `สัตว์กินเนื้อล่าและกินสัตว์กินพืชเป็นอาหาร (${getOpposite('carnivore').name} ตกเป็นเหยื่อ)` };
+  }
+
+  if (hasTrait('predator') && hasTrait('prey')) {
+    return { type: 'predation', detail: `ผู้ล่า (${t1.includes('predator') ? org1.name : org2.name}) ทำการล่าเหยื่อเพื่อเป็นอาหารตามระบบห่วงโซ่อาหาร` };
+  }
+
+  if (hasTrait('apex') && hasTrait('carnivore') && org1.id !== org2.id) {
+     return { type: 'competition', detail: 'สัตว์นักล่าทั้งสองชนิดเกิดการต่อสู้เพื่อแย่งชิงเหยื่อหรืออาณาเขตเดียวกันในระบบนิเวศ' };
+  }
+
+  if (hasTrait('herbivore') && hasTrait('prey_plant')) {
+    return { type: 'predation', detail: `สัตว์กินพืชกัดกินพืชเป็นอาหาร (ในทางนิเวศวิทยาถือเป็นการล่ารูปแบบหนึ่ง)` };
+  }
+
+  if (hasTrait('scavenger') && (hasTrait('apex') || hasTrait('carnivore') || hasTrait('predator'))) {
+    return { type: 'commensalism', detail: `สัตว์กินซากรอเก็บกินเศษอาหารที่เหลือจากสัตว์นักล่า โดยสัตว์นักล่าไม่ได้และไม่เสียประโยชน์` };
+  }
+
+  if (hasTrait('epiphyte') && hasTrait('tree')) {
+    return { type: 'commensalism', detail: `พืชอิงอาศัยเกาะบนพืชยืนต้นเพื่อรับแสง โดยไม่ได้ดูดน้ำเลี้ยงต้นไม้ใหญ่` };
+  }
+
+  if (org1.id === org2.id) {
+    return { type: 'competition', detail: `สิ่งมีชีวิตชนิดเดียวกัน ย่อมมีการแก่งแย่งทรัพยากร อาหาร หรือคู่ผสมพันธุ์ที่จำกัด (Intraspecific Competition)` };
+  }
+
+  if (t1.includes('herbivore') && t2.includes('herbivore')) {
+    return { type: 'competition', detail: `สัตว์กินพืชทั้งสองชนิดต้องแก่งแย่งชิงแหล่งอาหาร (พืช) และแหล่งน้ำเดียวกัน` };
+  }
+
+  if ((c1 === 'plant' && c2 === 'plant') || (hasTrait('producer') && hasTrait('producer'))) {
+    return { type: 'competition', detail: `พืชทั้งสองชนิดต้องแก่งแย่งแสงแดด แร่ธาตุ และน้ำในดินบริเวณเดียวกันเพื่อเจริญเติบโต` };
+  }
+
+  return { type: 'neutralism', detail: `สิ่งมีชีวิตทั้งสองอาจอาศัยในแหล่งเดียวกัน แต่มีความเป็นอยู่แยกกันชัดเจน ไม่มีปฏิสัมพันธ์ที่ส่งผลกระทบต่อกัน` };
+};
+
+export default function App() {
+  const [slot1, setSlot1] = useState(null);
+  const [slot2, setSlot2] = useState(null);
+  const [result, setResult] = useState(null);
+  
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [bioModalOrg, setBioModalOrg] = useState(null);
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('all');
+
+  const [discoveredPairs, setDiscoveredPairs] = useState(new Set());
+  const [showDiscoveryBadge, setShowDiscoveryBadge] = useState(false);
+
+  const handleSelect = (org) => {
+    if (isAnalyzing) return;
+    setResult(null); // Clear result if user selects something new
+    
+    if (slot1?.id === org.id) setSlot1(null);
+    else if (slot2?.id === org.id) setSlot2(null);
+    else if (!slot1) setSlot1(org);
+    else if (!slot2) setSlot2(org);
+    else setSlot2(org);
+  };
+
+  const handleClear = () => {
+    if (isAnalyzing) return;
+    setSlot1(null);
+    setSlot2(null);
+    setResult(null);
+  };
+
+  const handleAnalyze = () => {
+    if (!slot1 || !slot2) return;
+    setIsAnalyzing(true);
+    setResult(null);
+    
+    setTimeout(() => {
+      setIsAnalyzing(false);
+      const match = getMatchResult(slot1, slot2);
+      if (match) {
+        const typeInfo = relationshipTypes.find(t => t.id === match.type);
+        setResult({ ...match, ...typeInfo });
+        
+        const pairKey = [slot1.id, slot2.id].sort().join('-');
+        if (!discoveredPairs.has(pairKey)) {
+          setDiscoveredPairs(prev => {
+            const next = new Set(prev);
+            next.add(pairKey);
+            return next;
+          });
+          setShowDiscoveryBadge(true);
+          setTimeout(() => setShowDiscoveryBadge(false), 2000);
+        }
+      }
+    }, 1500);
+  };
+
+  const filteredOrganisms = useMemo(() => {
+    return organisms.filter(org => {
+      const matchQuery = org.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchCat = activeCategory === 'all' || org.category === activeCategory;
+      return matchQuery && matchCat;
+    });
+  }, [searchQuery, activeCategory]);
+
+  return (
+    <div className="h-screen bg-slate-950 text-slate-200 font-sans flex flex-col lg:flex-row overflow-hidden relative">
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.6); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.8); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
         @keyframes moveBackground {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
-
-        /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.6); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.8); }
-        
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Exciting Animations */
-        @keyframes popIn {
-            0% { opacity: 0; transform: scale(0.8) translateY(20px); }
-            70% { transform: scale(1.05) translateY(-5px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
+        .animated-bg {
+            background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #020617 100%);
+            background-size: 200% 200%;
+            animation: moveBackground 15s ease infinite;
         }
-        .animate-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
         @keyframes scanLaser {
             0% { top: 0%; opacity: 0; }
@@ -55,722 +413,271 @@
             90% { opacity: 1; box-shadow: 0 0 20px 2px #22d3ee, 0 0 40px 5px #3b82f6; }
             100% { top: 100%; opacity: 0; }
         }
-        .laser-scanner {
-            position: absolute;
-            left: 0; right: 0;
-            height: 2px;
-            background: #22d3ee;
-            z-index: 50;
-            animation: scanLaser 1.5s ease-in-out infinite;
-        }
+      `}} />
 
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 15px rgba(99,102,241,0.2); }
-            50% { box-shadow: 0 0 30px rgba(99,102,241,0.6); }
-        }
-        .slot-active { animation: pulseGlow 2s infinite; border-color: #6366f1; }
-
-        /* Hardware acceleration for smooth scrolling/animations */
-        .hardware-accelerated { transform: translateZ(0); will-change: transform, opacity; }
-    </style>
-</head>
-<body class="h-screen flex flex-col lg:flex-row overflow-hidden">
-
-    <!-- ----------------- โซนซ้าย/บน: ห้องทดลองจับคู่ (LAB ZONE) ----------------- -->
-    <div class="w-full lg:w-2/3 flex-1 min-h-[55vh] lg:min-h-0 p-4 sm:p-6 flex flex-col items-center justify-center relative border-b lg:border-b-0 lg:border-r border-slate-800/50 shadow-2xl z-10 backdrop-blur-sm bg-slate-900/30">
+      <div className="w-full lg:w-2/3 flex-1 min-h-[55vh] lg:min-h-0 p-4 sm:p-6 flex flex-col items-center justify-center relative border-b lg:border-b-0 lg:border-r border-slate-800/50 shadow-2xl z-10 animated-bg">
         
-        <!-- ป้ายชื่อมุมซ้ายบน -->
-        <div class="absolute top-4 left-4 z-20 flex flex-col bg-slate-900/60 backdrop-blur-md px-3 py-2 rounded-xl border border-slate-700/50 shadow-lg hardware-accelerated">
-            <h1 class="text-white font-black text-sm sm:text-base flex items-center gap-2 tracking-wide">
-                <i data-lucide="activity" class="text-cyan-400 w-4 h-4 animate-pulse"></i>
-                AI ECOLOGY LAB
-            </h1>
-            <p class="text-slate-400 text-[9px] sm:text-[11px] mt-0.5">พัฒนาโดย นายเมธาวัฒน์ พงสะพัง</p>
+        {/* Top Badges */}
+        <div className="absolute top-4 left-4 z-20 flex flex-col bg-slate-900/60 backdrop-blur-md px-3 py-2 rounded-xl border border-slate-700/50 shadow-lg">
+          <h1 className="text-white font-black text-sm sm:text-base flex items-center gap-2 tracking-wide">
+            <Activity className="text-cyan-400 w-4 h-4 animate-pulse" />
+            AI ECOLOGY LAB
+          </h1>
+          <p className="text-slate-400 text-[9px] sm:text-[11px] mt-0.5">พัฒนาโดย นายเมธาวัฒน์ พงสะพัง</p>
+          <div className={`mt-1 flex items-center gap-1.5 text-[10px] sm:text-xs font-mono px-2 py-0.5 rounded-md border transition-all duration-300 ${showDiscoveryBadge ? 'bg-cyan-500 text-white border-cyan-400 scale-110' : 'text-cyan-300 bg-cyan-900/30 border-cyan-500/30'}`}>
+            <FlaskConical className="w-3 h-3" />
+            <span>งานวิจัยที่ค้นพบ: <span className="font-bold text-white text-xs sm:text-sm">{discoveredPairs.size}</span></span>
+          </div>
         </div>
 
-        <!-- ปุ่มมุมขวาบน -->
-        <div class="absolute top-4 right-4 z-20">
-            <button onclick="toggleModal(true)" class="flex items-center gap-1 sm:gap-2 bg-slate-800/80 hover:bg-indigo-600 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] backdrop-blur-md border border-slate-700/50 hardware-accelerated">
-                <i data-lucide="book-open" class="w-4 h-4 text-indigo-300"></i>
-                <span>คู่มือทฤษฎี</span>
-            </button>
+        <div className="absolute top-4 right-4 z-20">
+          <button 
+            onClick={() => setShowInfo(true)}
+            className="flex items-center gap-1 sm:gap-2 bg-slate-800/80 hover:bg-indigo-600 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] backdrop-blur-md border border-slate-700/50"
+          >
+            <BookOpen className="w-4 h-4 text-indigo-300" />
+            <span>คู่มือทฤษฎี</span>
+          </button>
         </div>
 
-        <!-- กระดานจับคู่หลัก -->
-        <div class="w-full max-w-2xl mt-12 sm:mt-0 flex flex-col items-center relative hardware-accelerated">
-            
-            <!-- Effect สแกน (ซ่อนอยู่ จะโชว์ตอนประมวลผล) -->
-            <div id="scanOverlay" class="absolute inset-0 -mx-10 rounded-3xl bg-indigo-900/10 backdrop-blur-[2px] z-40 hidden flex-col items-center justify-center border border-indigo-500/30 shadow-inner">
-                <div class="laser-scanner"></div>
-                <i data-lucide="microscope" class="w-12 h-12 text-cyan-400 animate-bounce mb-2"></i>
-                <p class="text-cyan-300 font-mono text-sm tracking-widest font-bold animate-pulse shadow-black drop-shadow-md">ANALYZING BIO-SIGNATURES...</p>
+        {/* Board */}
+        <div className="w-full max-w-2xl mt-12 sm:mt-0 flex flex-col items-center relative">
+          
+          {/* Laser Scanner */}
+          {isAnalyzing && (
+            <div className="absolute inset-0 -mx-10 rounded-3xl bg-indigo-900/10 backdrop-blur-[2px] z-40 flex flex-col items-center justify-center border border-indigo-500/30 shadow-inner">
+              <div className="absolute left-0 right-0 h-[2px] bg-cyan-400 z-50 animate-[scanLaser_1.5s_ease-in-out_infinite]" />
+              <Microscope className="w-12 h-12 text-cyan-400 animate-bounce mb-2" />
+              <p className="text-cyan-300 font-mono text-sm tracking-widest font-bold animate-pulse shadow-black drop-shadow-md">ANALYZING BIO-SIGNATURES...</p>
+            </div>
+          )}
+
+          <div className="flex flex-row items-center justify-center gap-4 sm:gap-12 w-full mt-4">
+            {/* Slot 1 */}
+            <div onClick={() => !isAnalyzing && setSlot1(null)} className={`w-28 h-28 sm:w-48 sm:h-48 rounded-2xl sm:rounded-3xl border-2 flex items-center justify-center overflow-hidden transition-all duration-300 relative group cursor-pointer ${slot1 ? 'border-cyan-500 shadow-[0_0_30px_rgba(34,211,238,0.2)] bg-slate-800' : 'border-dashed border-slate-700 bg-slate-900/50 hover:border-slate-500'}`}>
+              {slot1 ? (
+                <>
+                  <SafeImage organism={slot1} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex items-end justify-center pb-2 sm:pb-3 pointer-events-none">
+                    <span className="text-white font-bold text-xs sm:text-lg drop-shadow-lg">{slot1.name}</span>
+                  </div>
+                  <div className="absolute top-2 right-2 bg-black/60 p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500">
+                    <X className="w-4 h-4" />
+                  </div>
+                </>
+              ) : (
+                <span className="text-slate-600 font-medium flex flex-col items-center gap-1 sm:gap-2">
+                  <Dna className="w-6 h-6 sm:w-8 sm:h-8 opacity-40" />
+                  <span className="text-[10px] sm:text-sm">สิ่งมีชีวิตที่ 1</span>
+                </span>
+              )}
             </div>
 
-            <!-- Slots -->
-            <div class="flex flex-row items-center justify-center gap-4 sm:gap-12 w-full mt-4" id="labBoard">
-                <!-- Slot 1 -->
-                <div id="slot1-container" onclick="clearSlot(1)" class="w-28 h-28 sm:w-48 sm:h-48 rounded-2xl sm:rounded-3xl border-2 border-dashed border-slate-700 bg-slate-900/50 flex items-center justify-center overflow-hidden transition-all duration-300 relative group cursor-pointer hover:border-slate-500">
-                    <span id="slot1-empty" class="text-slate-600 font-medium flex flex-col items-center gap-1 sm:gap-2 transition-opacity">
-                        <i data-lucide="dna" class="w-6 h-6 sm:w-8 sm:h-8 opacity-40"></i>
-                        <span class="text-[10px] sm:text-sm">สิ่งมีชีวิตที่ 1</span>
+            <div className="relative w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-slate-400 font-bold text-base sm:text-xl shadow-[0_0_15px_rgba(0,0,0,0.5)] z-10 shrink-0">
+              <div className={`transition-transform duration-500 ${(slot1 && slot2) ? 'rotate-180 text-cyan-400 scale-125' : ''}`}>+</div>
+            </div>
+
+            {/* Slot 2 */}
+            <div onClick={() => !isAnalyzing && setSlot2(null)} className={`w-28 h-28 sm:w-48 sm:h-48 rounded-2xl sm:rounded-3xl border-2 flex items-center justify-center overflow-hidden transition-all duration-300 relative group cursor-pointer ${slot2 ? 'border-cyan-500 shadow-[0_0_30px_rgba(34,211,238,0.2)] bg-slate-800' : 'border-dashed border-slate-700 bg-slate-900/50 hover:border-slate-500'}`}>
+              {slot2 ? (
+                <>
+                  <SafeImage organism={slot2} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex items-end justify-center pb-2 sm:pb-3 pointer-events-none">
+                    <span className="text-white font-bold text-xs sm:text-lg drop-shadow-lg">{slot2.name}</span>
+                  </div>
+                  <div className="absolute top-2 right-2 bg-black/60 p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500">
+                    <X className="w-4 h-4" />
+                  </div>
+                </>
+              ) : (
+                <span className="text-slate-600 font-medium flex flex-col items-center gap-1 sm:gap-2">
+                  <Dna className="w-6 h-6 sm:w-8 sm:h-8 opacity-40" />
+                  <span className="text-[10px] sm:text-sm">สิ่งมีชีวิตที่ 2</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Action Area */}
+          <div className="h-32 sm:h-48 mt-4 sm:mt-6 w-full flex flex-col items-center justify-center px-2">
+            {!result && slot1 && slot2 && !isAnalyzing && (
+              <button onClick={handleAnalyze} className="px-6 py-3 sm:px-8 sm:py-4 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full font-bold text-sm sm:text-lg shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all animate-bounce flex items-center gap-2">
+                <Cpu className="w-5 h-5 sm:w-6 sm:h-6" />
+                เริ่มสแกนวิเคราะห์ความสัมพันธ์
+              </button>
+            )}
+
+            {result && !isAnalyzing && (
+              <div className="w-full max-w-lg flex flex-col items-center animate-in zoom-in duration-300">
+                <div className={`w-full ${result.bg} ${result.border} border-2 rounded-2xl p-4 sm:p-6 backdrop-blur-md shadow-xl flex flex-col items-center text-center ${result.glow}`}>
+                  <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                    <h3 className={`text-xl sm:text-3xl font-black ${result.color} drop-shadow-md tracking-wide`}>
+                      {result.name}
+                    </h3>
+                    <span className="bg-black/40 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-sm sm:text-lg font-mono font-bold tracking-widest border border-white/20 text-white shadow-inner">
+                      {result.symbols}
                     </span>
-                    <div id="slot1-content" class="absolute inset-0 hidden">
-                        <div id="slot1-media" class="absolute inset-0 -z-10"></div>
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex items-end justify-center pb-2 sm:pb-3">
-                            <span id="slot1-name" class="text-white font-bold text-xs sm:text-lg drop-shadow-lg"></span>
-                        </div>
-                        <div class="absolute top-2 right-2 bg-black/60 p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500">
-                            <i data-lucide="x" class="w-4 h-4"></i>
-                        </div>
-                    </div>
+                  </div>
+                  <p className="text-slate-200 text-xs sm:text-base mb-1 max-w-lg leading-relaxed opacity-90">
+                    {result.detail}
+                  </p>
                 </div>
-
-                <!-- เครื่องหมาย + -->
-                <div class="relative w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-slate-400 font-bold text-base sm:text-xl shadow-[0_0_15px_rgba(0,0,0,0.5)] z-10 shrink-0">
-                    <div id="plus-icon" class="transition-transform duration-500">+</div>
-                </div>
-
-                <!-- Slot 2 -->
-                <div id="slot2-container" onclick="clearSlot(2)" class="w-28 h-28 sm:w-48 sm:h-48 rounded-2xl sm:rounded-3xl border-2 border-dashed border-slate-700 bg-slate-900/50 flex items-center justify-center overflow-hidden transition-all duration-300 relative group cursor-pointer hover:border-slate-500">
-                    <span id="slot2-empty" class="text-slate-600 font-medium flex flex-col items-center gap-1 sm:gap-2 transition-opacity">
-                        <i data-lucide="dna" class="w-6 h-6 sm:w-8 sm:h-8 opacity-40"></i>
-                        <span class="text-[10px] sm:text-sm">สิ่งมีชีวิตที่ 2</span>
-                    </span>
-                    <div id="slot2-content" class="absolute inset-0 hidden">
-                        <div id="slot2-media" class="absolute inset-0 -z-10"></div>
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex items-end justify-center pb-2 sm:pb-3">
-                            <span id="slot2-name" class="text-white font-bold text-xs sm:text-lg drop-shadow-lg"></span>
-                        </div>
-                        <div class="absolute top-2 right-2 bg-black/60 p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500">
-                            <i data-lucide="x" class="w-4 h-4"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ปุ่มล้างกระดาน -->
-            <button id="btnClear" onclick="clearBoard()" class="mt-4 sm:mt-6 text-xs sm:text-sm text-slate-500 hover:text-white transition-colors underline underline-offset-4 hidden">
-                ล้างการทดลอง
-            </button>
-
-            <!-- ผลลัพธ์การวิเคราะห์ (Popup) -->
-            <div class="h-32 sm:h-48 mt-4 sm:mt-6 w-full flex justify-center px-2 perspective-1000" id="resultContainer">
-                <div id="waitingState" class="w-full max-w-lg flex flex-col items-center justify-center p-4 border border-slate-700/50 rounded-2xl bg-slate-800/30 text-slate-500 text-sm h-full shadow-inner transition-opacity duration-300">
-                    <i data-lucide="cpu" class="w-8 h-8 mb-2 opacity-50"></i>
-                    รอรับตัวอย่างชีวภาพเพื่อวิเคราะห์ความสัมพันธ์...
-                </div>
-                
-                <div id="resultState" class="w-full max-w-lg hidden opacity-0 transition-opacity duration-500">
-                    <!-- จะถูกแทรก HTML จาก JS -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ----------------- โซนขวา/ล่าง: คลังสิ่งมีชีวิต (INVENTORY) ----------------- -->
-    <div class="w-full lg:w-1/3 h-[45vh] lg:h-full flex flex-col bg-slate-950/90 border-t lg:border-t-0 lg:border-l border-slate-800/80 backdrop-blur-xl shadow-[-10px_0_30px_rgba(0,0,0,0.5)] z-20">
-        
-        <!-- แถบค้นหาและตัวกรอง -->
-        <div class="p-3 sm:p-4 bg-slate-900/80 border-b border-slate-800/80 z-10 shadow-md hardware-accelerated">
-            <div class="relative mb-3 group">
-                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-cyan-400 transition-colors"></i>
-                <input 
-                    type="text" 
-                    id="searchInput"
-                    placeholder="ค้นหาสิ่งมีชีวิต (เช่น เสือ, ปลวก)..." 
-                    oninput="handleSearch()"
-                    class="w-full bg-slate-950 border border-slate-700 rounded-xl py-2.5 sm:py-3 pl-9 pr-4 text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all shadow-inner"
-                />
-            </div>
-            
-            <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x" id="categoryFilters">
-                <!-- ปุ่มจะถูกสร้างที่นี่ -->
-            </div>
-        </div>
-
-        <!-- กริดสิ่งมีชีวิต (ใช้ระบบซ่อน/โชว์ เพื่อไม่ให้แล็ก) -->
-        <div class="flex-1 overflow-y-auto p-3 sm:p-4 custom-scrollbar hardware-accelerated relative">
-            <div id="emptySearch" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 hidden">
-                <i data-lucide="ghost" class="w-12 h-12 mb-3 opacity-30"></i>
-                <p class="text-sm">ไม่พบตัวอย่างชีวภาพ</p>
-            </div>
-            <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-2 sm:gap-3 pb-12" id="inventoryGrid">
-                <!-- HTML การ์ด 100 ใบ จะถูกสร้างด้วย JS แค่ครั้งเดียวตอนเริ่ม -->
-            </div>
-        </div>
-    </div>
-
-    <!-- ----------------- Modal: ทฤษฎีความสัมพันธ์ ----------------- -->
-    <div id="infoModal" class="fixed inset-0 z-50 items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-sm hidden hardware-accelerated opacity-0 transition-opacity duration-300">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)] transform transition-transform duration-300 scale-95" id="modalBox">
-            <div class="p-4 sm:p-5 border-b border-slate-800 flex justify-between items-center bg-slate-800/50">
-                <h2 class="text-base sm:text-xl font-bold text-white flex items-center gap-2">
-                    <i data-lucide="book-open" class="text-indigo-400 w-5 h-5"></i>
-                    รูปแบบความสัมพันธ์ในระบบนิเวศ
-                </h2>
-                <button onclick="toggleModal(false)" class="text-slate-400 hover:text-white bg-slate-800 hover:bg-red-500/80 p-2 rounded-lg transition-all hover:scale-105 active:scale-95">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                <button onClick={handleClear} className="mt-4 text-xs sm:text-sm text-slate-500 hover:text-white transition-colors underline underline-offset-4">
+                  เริ่มการทดลองใหม่
                 </button>
-            </div>
-            
-            <div class="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1 bg-slate-900/80">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4" id="modalContent">
-                    <!-- เนื้อหา Modal จะถูกสร้างผ่าน JavaScript -->
-                </div>
-            </div>
+              </div>
+            )}
+
+            {!result && !(slot1 && slot2) && !isAnalyzing && (
+              <div className="w-full max-w-lg flex flex-col items-center justify-center p-4 border border-slate-700/50 rounded-2xl bg-slate-800/30 text-slate-500 text-sm h-full shadow-inner">
+                <Cpu className="w-8 h-8 mb-2 opacity-50" />
+                รอรับตัวอย่างชีวภาพเพื่อวิเคราะห์ความสัมพันธ์...
+              </div>
+            )}
+          </div>
+
         </div>
-    </div>
+      </div>
 
-    <script>
-        // --- State Management (Optimized) ---
-        let slot1 = null;
-        let slot2 = null;
-        let isAnalyzing = false; // ป้องกันการกดซ้ำตอนแอนิเมชันทำงาน
-        let searchQuery = '';
-        let activeCategory = 'all';
-
-        // --- Data Models ---
-        const relationshipTypes = [
-            { id: 'mutualism', name: 'ได้ประโยชน์ร่วมกัน', symbols: '(+, +)', desc: 'พึ่งพากันและกัน ขาดกันไม่ได้ หากแยกกันจะตายหรือดำรงชีวิตลำบาก', color: 'text-green-400', glow: 'shadow-[0_0_30px_rgba(74,222,128,0.2)]', bg: 'bg-green-500/10', border: 'border-green-500/30' },
-            { id: 'protocooperation', name: 'ได้ประโยชน์ร่วมกัน', symbols: '(+, +)', desc: 'ช่วยเหลือกัน ได้ประโยชน์ทั้งคู่ แต่สามารถแยกกันอยู่ได้โดยไม่ตาย', color: 'text-emerald-400', glow: 'shadow-[0_0_30px_rgba(52,211,153,0.2)]', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
-            { id: 'commensalism', name: 'ภาวะอิงอาศัย', symbols: '(+, 0)', desc: 'ฝ่ายหนึ่งได้ประโยชน์ อีกฝ่ายไม่ได้และไม่เสียประโยชน์ (เฉยๆ)', color: 'text-blue-400', glow: 'shadow-[0_0_30px_rgba(96,165,250,0.2)]', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
-            { id: 'predation', name: 'ภาวะล่าเหยื่อ', symbols: '(+, -)', desc: 'ผู้ล่าได้อาหาร (ประโยชน์) ส่วนเหยื่อถูกกิน (เสียประโยชน์/ตาย)', color: 'text-red-400', glow: 'shadow-[0_0_30px_rgba(248,113,113,0.2)]', bg: 'bg-red-500/10', border: 'border-red-500/30' },
-            { id: 'parasitism', name: 'ภาวะปรสิต', symbols: '(+, -)', desc: 'ปรสิตแฝงตัวดูดสารอาหาร โฮสต์เสียประโยชน์และอ่อนแอลง', color: 'text-orange-400', glow: 'shadow-[0_0_30px_rgba(251,146,60,0.2)]', bg: 'bg-orange-500/10', border: 'border-orange-500/30' },
-            { id: 'competition', name: 'ภาวะแก่งแย่ง', symbols: '(-, -)', desc: 'แย่งชิงทรัพยากรที่จำกัด ทำให้เสียประโยชน์และอ่อนแอกันทั้่งคู่', color: 'text-purple-400', glow: 'shadow-[0_0_30px_rgba(192,132,252,0.2)]', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
-            { id: 'neutralism', name: 'ภาวะเป็นกลาง', symbols: '(0, 0)', desc: 'อาศัยในแหล่งเดียวกันแต่ไม่มีปฏิสัมพันธ์หรือผลกระทบต่อกัน', color: 'text-slate-300', glow: 'shadow-[0_0_30px_rgba(203,213,225,0.1)]', bg: 'bg-slate-500/10', border: 'border-slate-500/30' }
-        ];
-
-        const categories = [
-            { id: 'all', name: 'ทั้งหมด', icon: 'globe' },
-            { id: 'mammal', name: 'สัตว์บก', icon: 'paw-print' },
-            { id: 'bird', name: 'นก', icon: 'bird' },
-            { id: 'marine', name: 'สัตว์น้ำ', icon: 'fish' },
-            { id: 'insect', name: 'แมลง', icon: 'bug' },
-            { id: 'plant', name: 'พืช', icon: 'leaf' },
-            { id: 'microbe', name: 'จุลินทรีย์', icon: 'microscope' }
-        ];
-
-        // ฐานข้อมูลสิ่งมีชีวิต 100 ชนิด 
-        // อัปเดต: เปลี่ยนภาพ "โปรโตซัวไตรโคนิมฟา" ให้เป็นเซลล์จุลชีววิทยาที่เรืองแสงสวยงาม (Sci-Fi / Microscopic view)
-        const organisms = [
-            // สัตว์บก/สัตว์เลื้อยคลาน/สะเทินน้ำสะเทินบก (24 ชนิด)
-            { id: 'tiger', name: 'เสือโคร่ง', category: 'mammal', traits: ['carnivore', 'apex'], wikiPage: 'Tiger', images: ['https://images.unsplash.com/photo-1561731216-c3a4d99437d5'] },
-            { id: 'deer', name: 'กวางป่า', category: 'mammal', traits: ['herbivore', 'prey'], wikiPage: 'Chital', images: ['https://images.unsplash.com/photo-1484406561408-79548cb5a34e'] },
-            { id: 'buffalo', name: 'ควายป่า', category: 'mammal', traits: ['herbivore', 'host'], wikiPage: 'African_buffalo', images: ['https://images.unsplash.com/photo-1596700770514-9b22b27dfc6f'] },
-            { id: 'lion', name: 'สิงโต', category: 'mammal', traits: ['carnivore', 'apex'], wikiPage: 'Lion', images: ['https://images.unsplash.com/photo-1546182990-dffeafbe841d'] },
-            { id: 'hyena', name: 'ไฮยีน่า', category: 'mammal', traits: ['carnivore', 'scavenger'], wikiPage: 'Spotted_hyena', images: ['https://images.unsplash.com/photo-1599818815187-57ed06da0ba3'] },
-            { id: 'rhino', name: 'แรด', category: 'mammal', traits: ['herbivore', 'host'], wikiPage: 'White_rhinoceros', images: ['https://images.unsplash.com/photo-1534062569269-a1b73010b991'] },
-            { id: 'zebra', name: 'ม้าลาย', category: 'mammal', traits: ['herbivore', 'prey'], wikiPage: 'Zebra', images: ['https://images.unsplash.com/photo-1501705388883-4ed8a543392c'] },
-            { id: 'dog', name: 'สุนัข', category: 'mammal', traits: ['omnivore', 'host'], wikiPage: 'Dog', images: ['https://images.unsplash.com/photo-1543466835-00a7907e9de1'] },
-            { id: 'elephant', name: 'ช้างป่า', category: 'mammal', traits: ['herbivore', 'large_herbivore'], wikiPage: 'Elephant', images: ['https://images.unsplash.com/photo-1557050543-4d5f4e07ef46'] },
-            { id: 'cheetah', name: 'เสือชีตาห์', category: 'mammal', traits: ['carnivore', 'predator'], wikiPage: 'Cheetah', images: ['https://upload.wikimedia.org/wikipedia/commons/1/11/Cheetah_Kruger.jpg?utm_source=th.wikipedia.org&utm_campaign=index&utm_content=original'] },
-            { id: 'hippo', name: 'ฮิปโป', category: 'mammal', traits: ['herbivore', 'large_herbivore'], wikiPage: 'Hippopotamus', images: ['https://images.unsplash.com/photo-1603503364272-6e279d3910c2'] },
-            { id: 'human', name: 'มนุษย์', category: 'mammal', traits: ['omnivore', 'apex', 'host'], wikiPage: 'Human', images: ['image_aad7dc.jpg'] },
-            { id: 'bear', name: 'หมี', category: 'mammal', traits: ['omnivore', 'apex'], wikiPage: 'Bear', images: ['https://images.unsplash.com/photo-1589656966895-2f33e7653819'] },
-            { id: 'wolf', name: 'หมาป่า', category: 'mammal', traits: ['carnivore', 'predator'], wikiPage: 'Wolf', images: ['https://images.unsplash.com/photo-1564292100808-66258d5cf420'] },
-            { id: 'fox', name: 'จิ้งจอก', category: 'mammal', traits: ['omnivore', 'predator'], wikiPage: 'Red_fox', images: ['https://images.unsplash.com/photo-1474511320723-9a56873867b5'] },
-            { id: 'rabbit', name: 'กระต่าย', category: 'mammal', traits: ['herbivore', 'prey'], wikiPage: 'Rabbit', images: ['https://images.unsplash.com/photo-1585110396000-c9fd4e4e5030'] },
-            { id: 'squirrel', name: 'กระรอก', category: 'mammal', traits: ['herbivore', 'prey'], wikiPage: 'Squirrel', images: ['https://images.unsplash.com/photo-1507666405895-422eee7d517f'] },
-            { id: 'bat', name: 'ค้างคาว', category: 'mammal', traits: ['omnivore', 'pollinator'], wikiPage: 'Bat', images: ['https://images.unsplash.com/photo-1604085449557-0a256d0d2dd0'] },
-            { id: 'monkey', name: 'ลิง', category: 'mammal', traits: ['omnivore', 'prey'], wikiPage: 'Monkey', images: ['https://images.unsplash.com/photo-1540573133985-87b6da6d54a9'] },
-            { id: 'crocodile', name: 'จระเข้', category: 'mammal', traits: ['carnivore', 'apex'], wikiPage: 'Crocodile', images: ['https://images.unsplash.com/photo-1521406560416-5bc50ceeb45a'] },
-            { id: 'snake', name: 'งู', category: 'mammal', traits: ['carnivore', 'predator'], wikiPage: 'Snake', images: ['https://images.unsplash.com/photo-1535268647677-300df73e8de2'] },
-            { id: 'frog', name: 'กบ', category: 'mammal', traits: ['insectivore', 'prey'], wikiPage: 'Frog', images: ['https://images.unsplash.com/photo-1578278278453-e31350849495'] },
-            { id: 'iguana', name: 'อีกัวน่า', category: 'mammal', traits: ['herbivore', 'prey'], wikiPage: 'Iguana', images: ['https://images.unsplash.com/photo-1516108182740-410a08e06399'] },
-            { id: 'chameleon', name: 'กิ้งก่า', category: 'mammal', traits: ['insectivore', 'predator'], wikiPage: 'Chameleon', images: ['https://images.unsplash.com/photo-1547021750-b08e24dc1cba'] },
-            
-            // นก (16 ชนิด)
-            { id: 'myna', name: 'นกเอี้ยง', category: 'bird', traits: ['omnivore', 'cleaner'], wikiPage: 'Common_myna', images: ['https://images.unsplash.com/photo-1550853024-fae8cd4be47f'] },
-            { id: 'eagle', name: 'นกอินทรี', category: 'bird', traits: ['carnivore', 'apex'], wikiPage: 'Golden_eagle', images: ['https://images.unsplash.com/photo-1611689342806-0863700ce1e4'] },
-            { id: 'vulture', name: 'อีแร้ง', category: 'bird', traits: ['scavenger'], wikiPage: 'Vulture', images: ['https://images.unsplash.com/photo-1598463836709-66170d56ee13'] },
-            { id: 'hummingbird', name: 'นกฮัมมิงเบิร์ด', category: 'bird', traits: ['herbivore', 'pollinator'], wikiPage: 'Hummingbird', images: ['https://images.unsplash.com/photo-1543007168-5fa8b3c3f589'] },
-            { id: 'woodpecker', name: 'นกหัวขวาน', category: 'bird', traits: ['insectivore', 'nest_builder'], wikiPage: 'Woodpecker', images: ['https://images.unsplash.com/photo-1616223164998-3860bb6f98af'] },
-            { id: 'owl', name: 'นกฮูก', category: 'bird', traits: ['carnivore', 'predator'], wikiPage: 'Owl', images: ['https://images.unsplash.com/photo-1590513886566-6644f1cbe2d3'] },
-            { id: 'ostrich', name: 'นกกระจอกเทศ', category: 'bird', traits: ['omnivore', 'prey'], wikiPage: 'Ostrich', images: ['https://images.unsplash.com/photo-1548174411-cf49fb753d08'] },
-            { id: 'penguin', name: 'เพนกวิน', category: 'bird', traits: ['carnivore', 'prey'], wikiPage: 'Penguin', images: ['https://images.unsplash.com/photo-1551410217-1f48ed2d2949'] },
-            { id: 'pelican', name: 'นกกระทุง', category: 'bird', traits: ['carnivore', 'predator'], wikiPage: 'Pelican', images: ['https://images.unsplash.com/photo-1579219665646-608f62f3f752'] },
-            { id: 'parrot', name: 'นกแก้ว', category: 'bird', traits: ['herbivore', 'prey'], wikiPage: 'Parrot', images: ['https://images.unsplash.com/photo-1521190432128-4ce3df997420'] },
-            { id: 'crow', name: 'อีกา', category: 'bird', traits: ['omnivore', 'scavenger'], wikiPage: 'Crow', images: ['https://images.unsplash.com/photo-1582236852445-31a892795f7c'] },
-            { id: 'duck', name: 'เป็ด', category: 'bird', traits: ['omnivore', 'prey'], wikiPage: 'Duck', images: ['https://images.unsplash.com/photo-1518314115160-c4819dfb4cb2'] },
-            { id: 'swan', name: 'หงส์', category: 'bird', traits: ['herbivore', 'prey'], wikiPage: 'Swan', images: ['https://images.unsplash.com/photo-1510202279148-3a8126b86ce9'] },
-            { id: 'flamingo', name: 'ฟลามิงโก', category: 'bird', traits: ['carnivore', 'filter_feeder'], wikiPage: 'Flamingo', images: ['https://images.unsplash.com/photo-1497206103366-0772714c679b'] },
-            { id: 'peacock', name: 'นกยูง', category: 'bird', traits: ['omnivore', 'prey'], wikiPage: 'Peafowl', images: ['https://images.unsplash.com/photo-1502219684198-422eee7d517f'] },
-            { id: 'pigeon', name: 'นกพิราบ', category: 'bird', traits: ['omnivore', 'prey'], wikiPage: 'Rock_dove', images: ['https://images.unsplash.com/photo-1555580644-88f572979201'] },
-
-            // แมลงและสัตว์ไม่มีกระดูกสันหลังบนบก (25 ชนิด)
-            { id: 'tick', name: 'เห็บ', category: 'insect', traits: ['parasite'], wikiPage: 'Tick', images: ['https://images.unsplash.com/photo-1621251919864-4630a9fa93e2'] },
-            { id: 'flea', name: 'หมัด', category: 'insect', traits: ['parasite'], wikiPage: 'Flea', images: ['https://images.unsplash.com/photo-1587847307044-77e8d26fb51e'] },
-            { id: 'bee', name: 'ผึ้ง', category: 'insect', traits: ['herbivore', 'pollinator'], wikiPage: 'Bee', images: ['https://images.unsplash.com/photo-1587522543161-07736f3ce013'] },
-            { id: 'butterfly', name: 'ผีเสื้อ', category: 'insect', traits: ['herbivore', 'pollinator'], wikiPage: 'Butterfly', images: ['https://images.unsplash.com/photo-1552504812-32a26514757c'] },
-            { id: 'mantis', name: 'ตั๊กแตนตำข้าว', category: 'insect', traits: ['carnivore', 'predator'], wikiPage: 'Mantis', images: ['https://images.unsplash.com/photo-1585848529288-0240d43ce1b1'] },
-            { id: 'caterpillar', name: 'หนอนผีเสื้อ', category: 'insect', traits: ['herbivore', 'prey', 'host'], wikiPage: 'Caterpillar', images: ['https://images.unsplash.com/photo-1580227914441-df071d38da70'] },
-            { id: 'mosquito', name: 'ยุง', category: 'insect', traits: ['parasite'], wikiPage: 'Mosquito', images: ['https://images.unsplash.com/photo-1510403714571-7006764724cb'] },
-            { id: 'spider', name: 'แมงมุม', category: 'insect', traits: ['carnivore', 'predator'], wikiPage: 'Spider', images: ['https://images.unsplash.com/photo-1515248109259-25f0a0715694'] },
-            { id: 'ladybug', name: 'เต่าทอง', category: 'insect', traits: ['carnivore', 'predator'], wikiPage: 'Coccinellidae', images: ['https://images.unsplash.com/photo-1542475027-802521e10260'] },
-            { id: 'ant', name: 'มด', category: 'insect', traits: ['omnivore', 'scavenger'], wikiPage: 'Ant', images: ['https://images.unsplash.com/photo-1506456070624-9b8823521a09'] },
-            { id: 'aphid', name: 'เพลี้ยอ่อน', category: 'insect', traits: ['herbivore', 'prey'], wikiPage: 'Aphid', images: ['https://images.unsplash.com/photo-1619565538338-7f938b8e0186'] },
-            { id: 'termite', name: 'ปลวก', category: 'insect', traits: ['herbivore', 'host', 'decomposer'], wikiPage: 'Termite', images: ['https://images.unsplash.com/photo-1616854972986-7b4487b22a00'] },
-            { id: 'grasshopper', name: 'ตั๊กแตน', category: 'insect', traits: ['herbivore', 'prey'], wikiPage: 'Grasshopper', images: ['https://images.unsplash.com/photo-1501700624107-1601725b84d4'] },
-            { id: 'dragonfly', name: 'แมลงปอ', category: 'insect', traits: ['carnivore', 'predator'], wikiPage: 'Dragonfly', images: ['https://images.unsplash.com/photo-1518002621495-231362e07897'] },
-            { id: 'fly', name: 'แมลงวัน', category: 'insect', traits: ['omnivore', 'scavenger'], wikiPage: 'Fly', images: ['https://images.unsplash.com/photo-1522080352528-912fcc0f62b4'] },
-            { id: 'centipede', name: 'ตะขาบ', category: 'insect', traits: ['carnivore', 'predator'], wikiPage: 'Centipede', images: ['https://images.unsplash.com/photo-1617469739501-c67be84fbffb'] },
-            { id: 'millipede', name: 'กิ้งกือ', category: 'insect', traits: ['detritivore', 'decomposer'], wikiPage: 'Millipede', images: ['https://images.unsplash.com/photo-1608678089408-e8a49ba8e08d'] },
-            { id: 'scorpion', name: 'แมงป่อง', category: 'insect', traits: ['carnivore', 'predator'], wikiPage: 'Scorpion', images: ['https://images.unsplash.com/photo-1605335035272-a720934f553a'] },
-            { id: 'beetle', name: 'ด้วง', category: 'insect', traits: ['herbivore', 'decomposer'], wikiPage: 'Beetle', images: ['https://images.unsplash.com/photo-1549420040-5b5832a4e231'] },
-            { id: 'cockroach', name: 'แมลงสาบ', category: 'insect', traits: ['omnivore', 'scavenger'], wikiPage: 'Cockroach', images: ['https://images.unsplash.com/photo-1614030616183-b710c0bfd91e'] },
-            { id: 'earthworm', name: 'ไส้เดือนดิน', category: 'insect', traits: ['detritivore', 'decomposer'], wikiPage: 'Earthworm', images: ['https://images.unsplash.com/photo-1598583488225-b873f1ff22bc'] },
-            { id: 'leech', name: 'ปลิง', category: 'insect', traits: ['parasite'], wikiPage: 'Leech', images: ['https://images.unsplash.com/photo-1627993214434-60144596328a'] },
-            { id: 'snail', name: 'หอยทาก', category: 'insect', traits: ['herbivore', 'prey'], wikiPage: 'Snail', images: ['https://images.unsplash.com/photo-1531633512399-56543b573e3a'] },
-            { id: 'slug', name: 'ทาก', category: 'insect', traits: ['herbivore', 'prey'], wikiPage: 'Slug', images: ['https://images.unsplash.com/photo-1590400030508-3f59edc1d763'] },
-            { id: 'moth', name: 'ผีเสื้อกลางคืน', category: 'insect', traits: ['herbivore', 'pollinator'], wikiPage: 'Moth', images: ['https://images.unsplash.com/photo-1563200787-19e075c3ef94'] },
-
-            // สัตว์ทะเล (15 ชนิด)
-            { id: 'shark', name: 'ฉลาม', category: 'marine', traits: ['carnivore', 'apex', 'marine_host'], wikiPage: 'Great_white_shark', images: ['https://images.unsplash.com/photo-1560275619-4662e36fa65c'] },
-            { id: 'remora', name: 'ปลาเหาฉลาม', category: 'marine', traits: ['scavenger', 'hitchhiker'], wikiPage: 'Remora', images: ['https://images.unsplash.com/photo-1577789312150-13651239eb87'] },
-            { id: 'clownfish', name: 'ปลาการ์ตูน', category: 'marine', traits: ['omnivore', 'anemone_dweller'], wikiPage: 'Ocellaris_clownfish', images: ['https://images.unsplash.com/photo-1544552866-d3ed42536fcb'] },
-            { id: 'anemone', name: 'ดอกไม้ทะเล', category: 'marine', traits: ['carnivore', 'shelter_provider'], wikiPage: 'Sea_anemone', images: ['https://images.unsplash.com/photo-1518012658826-5b61405e3b6a'] },
-            { id: 'whale', name: 'วาฬ', category: 'marine', traits: ['carnivore', 'marine_host'], wikiPage: 'Whale', images: ['https://images.unsplash.com/photo-1568430462989-44163eb1752f'] },
-            { id: 'barnacle', name: 'เพรียง', category: 'marine', traits: ['filter_feeder', 'hitchhiker'], wikiPage: 'Barnacle', images: ['https://images.unsplash.com/photo-1596752763784-a15e61ff3cd4'] },
-            { id: 'crab', name: 'ปูเสฉวน', category: 'marine', traits: ['scavenger', 'shell_dweller'], wikiPage: 'Hermit_crab', images: ['https://images.unsplash.com/photo-1601633534570-5b8d9600e163'] },
-            { id: 'dolphin', name: 'โลมา', category: 'marine', traits: ['carnivore', 'predator'], wikiPage: 'Dolphin', images: ['https://images.unsplash.com/photo-1570482606822-1d7d24d20917'] },
-            { id: 'turtle', name: 'เต่าทะเล', category: 'marine', traits: ['omnivore', 'marine_host'], wikiPage: 'Sea_turtle', images: ['https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f'] },
-            { id: 'coral', name: 'ปะการัง', category: 'marine', traits: ['filter_feeder', 'shelter_provider'], wikiPage: 'Coral', images: ['https://images.unsplash.com/photo-1546026423-cc4642628d2b'] },
-            { id: 'octopus', name: 'หมึกยักษ์', category: 'marine', traits: ['carnivore', 'predator'], wikiPage: 'Octopus', images: ['https://images.unsplash.com/photo-1545695864-fbbffb4009bb'] },
-            { id: 'jellyfish', name: 'แมงกะพรุน', category: 'marine', traits: ['carnivore', 'predator'], wikiPage: 'Jellyfish', images: ['https://images.unsplash.com/photo-1510444391629-dccff24f56f1'] },
-            { id: 'seahorse', name: 'ม้าน้ำ', category: 'marine', traits: ['carnivore', 'prey'], wikiPage: 'Seahorse', images: ['https://images.unsplash.com/photo-1575010667087-cb9907beab2b'] },
-            { id: 'squid', name: 'ปลาหมึก', category: 'marine', traits: ['carnivore', 'predator', 'prey'], wikiPage: 'Squid', images: ['https://images.unsplash.com/photo-1617056075924-f7b5bebfab5b'] },
-            { id: 'starfish', name: 'ปลาดาว', category: 'marine', traits: ['carnivore', 'decomposer'], wikiPage: 'Starfish', images: ['https://images.unsplash.com/photo-1555562095-2cceec28baee'] },
-
-            // พืช (12 ชนิด)
-            { id: 'tree', name: 'ต้นไม้ใหญ่', category: 'plant', traits: ['producer', 'tree'], wikiPage: 'Tree', images: ['https://images.unsplash.com/photo-1502082553048-f009c37129b9'] },
-            { id: 'orchid', name: 'กล้วยไม้', category: 'plant', traits: ['producer', 'epiphyte'], wikiPage: 'Orchid', images: ['https://images.unsplash.com/photo-1551893665-f843f600794e'] },
-            { id: 'flower', name: 'ดอกไม้', category: 'plant', traits: ['producer', 'nectar_provider'], wikiPage: 'Flower', images: ['https://images.unsplash.com/photo-1490750967868-8f5d484ec1a3'] },
-            { id: 'grass', name: 'หญ้า', category: 'plant', traits: ['producer', 'prey_plant'], wikiPage: 'Grass', images: ['https://images.unsplash.com/photo-1533460004989-cef0106097d6'] },
-            { id: 'rafflesia', name: 'ดอกบัวผุด', category: 'plant', traits: ['parasitic_plant'], wikiPage: 'Rafflesia', images: ['https://images.unsplash.com/photo-1596356561570-07ec82310f84'] },
-            { id: 'strangler_fig', name: 'ไทรย้อย', category: 'plant', traits: ['producer', 'tree_killer'], wikiPage: 'Strangler_fig', images: ['https://images.unsplash.com/photo-1626244799042-45e05086d4e2'] },
-            { id: 'cactus', name: 'กระบองเพชร', category: 'plant', traits: ['producer', 'desert_plant'], wikiPage: 'Cactus', images: ['https://images.unsplash.com/photo-1459411552884-841db9b3cc2a'] },
-            { id: 'venus_flytrap', name: 'กาบหอยแครง', category: 'plant', traits: ['carnivorous_plant', 'producer'], wikiPage: 'Venus_flytrap', images: ['https://images.unsplash.com/photo-1614006282869-2f22b7a8a816'] },
-            { id: 'fern', name: 'เฟิร์น', category: 'plant', traits: ['producer', 'epiphyte'], wikiPage: 'Fern', images: ['https://images.unsplash.com/photo-1579998188287-211756538965'] },
-            { id: 'pine', name: 'ต้นสน', category: 'plant', traits: ['producer', 'tree'], wikiPage: 'Pine', images: ['https://images.unsplash.com/photo-1543169720-d30560b45ddf'] },
-            { id: 'pitcher_plant', name: 'หม้อข้าวหม้อแกงลิง', category: 'plant', traits: ['carnivorous_plant', 'producer'], wikiPage: 'Pitcher_plant', images: ['https://images.unsplash.com/photo-1620610360814-1fbc8ebccf92'] },
-            { id: 'bamboo', name: 'ไผ่', category: 'plant', traits: ['producer', 'prey_plant'], wikiPage: 'Bamboo', images: ['https://images.unsplash.com/photo-1533722744955-463e26462615'] },
-
-            // จุลินทรีย์ ปรสิตภายใน และอื่นๆ (8 ชนิด)
-            { id: 'fungi', name: 'รา (Fungi)', category: 'microbe', traits: ['decomposer', 'lichen_part'], wikiPage: 'Fungus', images: ['https://images.unsplash.com/photo-1605806616949-1e87b487cb2a'] },
-            { id: 'algae', name: 'สาหร่าย', category: 'plant', traits: ['producer', 'lichen_part'], wikiPage: 'Algae', images: ['https://images.unsplash.com/photo-1617300705574-889816ec7c84'] },
-            { id: 'bacteria', name: 'แบคทีเรียปมราก', category: 'microbe', traits: ['nitrogen_fixer'], wikiPage: 'Root_nodule', images: ['https://images.unsplash.com/photo-1574246876359-541dd44b8253'] },
-            { id: 'legume', name: 'พืชตระกูลถั่ว', category: 'plant', traits: ['producer', 'legume'], wikiPage: 'Legume', images: ['https://images.unsplash.com/photo-1590502283084-256eb6009384'] },
-            { id: 'cordyceps', name: 'ราแมลง', category: 'microbe', traits: ['parasite'], wikiPage: 'Ophiocordyceps_sinensis', images: ['https://images.unsplash.com/photo-1634127027878-3a2181cfbc73'] },
-            { id: 'amoeba', name: 'อะมีบา', category: 'microbe', traits: ['consumer', 'micro_predator'], wikiPage: 'Amoeba', images: ['https://images.unsplash.com/photo-1576086213369-97a306d36557'] },
-            { id: 'virus', name: 'ไวรัส', category: 'microbe', traits: ['parasite'], wikiPage: 'Virus', images: ['https://images.unsplash.com/photo-1584036561566-baf8f5f1b144'] },
-            { id: 'tapeworm', name: 'พยาธิตัวตืด', category: 'microbe', traits: ['parasite'], wikiPage: 'Tapeworm', images: ['https://images.unsplash.com/photo-1574288070949-14a938ec494a'] },
-            
-            // อัปเดตรูปภาพ ไตรโคนิมฟา (ใช้ภาพเซลล์จุลชีพเรืองแสง สวยงามและสื่อถึงจุลินทรีย์ได้ดีเยี่ยม)
-            { id: 'trichonympha', name: 'โปรโตซัวไตรโคนิมฟา', category: 'microbe', traits: ['cellulose_digester'], wikiPage: 'Trichonympha', images: ['https://images.unsplash.com/photo-1614935151651-0bea6508abb0'] }
-        ];
-
-        // --- AI Engine for Relationships ---
-        function getMatchResult(org1, org2) {
-            if (!org1 || !org2) return null;
-            const ids = [org1.id, org2.id];
-            const t1 = org1.traits;
-            const t2 = org2.traits;
-            const c1 = org1.category;
-            const c2 = org2.category;
-            
-            // Specific Exact Matches (Hardcoded rules for famous pairs)
-            if (ids.includes('myna') && ids.includes('buffalo')) return { type: 'protocooperation', detail: 'นกเอี้ยงช่วยกินแมลงบนหลังควาย (ได้อาหาร) ส่วนควายสบายตัวขึ้น (กำจัดปรสิต) ทั้งคู่แยกกันอยู่ได้' };
-            if (ids.includes('shark') && ids.includes('remora')) return { type: 'commensalism', detail: 'ปลาเหาฉลามเกาะติดฉลามเพื่อกินเศษอาหารและได้ที่หลบภัย ส่วนฉลามไม่ได้และไม่เสียประโยชน์' };
-            if (ids.includes('clownfish') && ids.includes('anemone')) return { type: 'mutualism', detail: 'ปลาการ์ตูนหลบภัยในดอกไม้ทะเลและช่วยทำความสะอาด ดอกไม้ทะเลได้ปลาการ์ตูนล่อเหยื่อ ขาดกันไม่ได้ในธรรมชาติ' };
-            if (ids.includes('tree') && ids.includes('orchid')) return { type: 'commensalism', detail: 'กล้วยไม้อาศัยเกาะต้นไม้ใหญ่เพื่อให้ได้แสงแดด โดยไม่ได้แย่งอาหารจากต้นไม้ใหญ่' };
-            if ((ids.includes('tree') || ids.includes('pine')) && ids.includes('fern')) return { type: 'commensalism', detail: 'เฟิร์นเป็นพืชอิงอาศัย เกาะต้นไม้ใหญ่เพื่อให้ได้รับแสงแดด โดยไม่ได้แย่งอาหารหรือน้ำจากต้นไม้' };
-            if (ids.includes('fungi') && ids.includes('algae')) return { type: 'mutualism', detail: 'ราให้ความชื้นและที่ยึดเกาะ สาหร่ายสร้างอาหารจากการสังเคราะห์แสง (เกิดเป็น "ไลเคน") ต้องอยู่ร่วมกัน' };
-            if (ids.includes('bacteria') && ids.includes('legume')) return { type: 'mutualism', detail: 'แบคทีเรียไรโซเบียมในปมรากถั่วช่วยตรึงไนโตรเจนให้พืช พืชให้อาหารและที่อยู่อาศัยแก่แบคทีเรีย' };
-            if (ids.includes('tree') && ids.includes('strangler_fig')) return { type: 'parasitism', detail: 'ไทรย้อยเริ่มต้นจากการอิงอาศัย แต่เมื่อโตขึ้นจะแย่งแสงและรัดต้นไม้เดิมจนตาย (กาฝาก)' };
-            if (ids.includes('caterpillar') && ids.includes('cordyceps')) return { type: 'parasitism', detail: 'ราแมลง (Cordyceps) เข้าสิงและเติบโตในตัวหนอน ดูดกินสารอาหารจนหนอนตาย' };
-            if (ids.includes('ant') && ids.includes('aphid')) return { type: 'protocooperation', detail: 'มดคอยปกป้องเพลี้ยอ่อนจากศัตรู ส่วนเพลี้ยอ่อนให้น้ำหวาน (Honeydew) แก่มดเป็นอาหาร' };
-            if (ids.includes('termite') && ids.includes('trichonympha')) return { type: 'mutualism', detail: 'โปรโตซัวไตรโคนิมฟาในลำไส้ปลวกช่วยย่อยเซลลูโลสในไม้ ปลวกให้ที่อยู่อาศัยและอาหาร ขาดกันไม่ได้' };
-
-            // Dynamic AI Rule-based Matching (รองรับ 4,950 รูปแบบ)
-            const hasTrait = (trait) => t1.includes(trait) || t2.includes(trait);
-            const getOpposite = (trait) => t1.includes(trait) ? org2 : org1;
-
-            if (hasTrait('carnivorous_plant') && (c1 === 'insect' || c2 === 'insect')) {
-                return { type: 'predation', detail: 'พืชกินแมลงทำการดักจับและย่อยสลายแมลงเพื่อนำแร่ธาตุมาเป็นอาหารเสริม' };
-            }
-            if (hasTrait('parasite')) {
-                if (hasTrait('host') || hasTrait('mammal') || hasTrait('bird') || hasTrait('prey') || hasTrait('marine_host')) {
-                    return { type: 'parasitism', detail: `ปรสิตเกาะติดหรือดูดสารอาหารและทำอันตรายต่อโฮสต์ (${getOpposite('parasite').name} เสียสุขภาพและเสียประโยชน์)` };
-                }
-            }
-            if (hasTrait('pollinator') && hasTrait('nectar_provider')) {
-                return { type: 'protocooperation', detail: `แมลง/นก ได้น้ำหวานเป็นอาหาร ส่วนพืชได้รับการผสมเกสรเพื่อให้ขยายพันธุ์ได้รวดเร็ว` };
-            }
-            if (hasTrait('carnivore') && hasTrait('herbivore')) {
-                return { type: 'predation', detail: `สัตว์กินเนื้อล่าและกินสัตว์กินพืชเป็นอาหาร (${getOpposite('carnivore').name} ตกเป็นเหยื่อ)` };
-            }
-            if (hasTrait('predator') && hasTrait('prey')) {
-                return { type: 'predation', detail: `ผู้ล่า (${t1.includes('predator') ? org1.name : org2.name}) ทำการล่าเหยื่อเพื่อเป็นอาหารตามระบบห่วงโซ่อาหาร` };
-            }
-            if (hasTrait('apex') && hasTrait('carnivore') && org1.id !== org2.id) {
-                return { type: 'competition', detail: 'สัตว์นักล่าทั้งสองชนิดเกิดการต่อสู้เพื่อแย่งชิงเหยื่อหรืออาณาเขตเดียวกันในระบบนิเวศ' };
-            }
-            if (hasTrait('herbivore') && hasTrait('prey_plant')) {
-                return { type: 'predation', detail: `สัตว์กินพืชกัดกินพืชเป็นอาหาร (ในทางนิเวศวิทยาถือเป็นการล่ารูปแบบหนึ่ง)` };
-            }
-            if (hasTrait('scavenger') && (hasTrait('apex') || hasTrait('carnivore') || hasTrait('predator'))) {
-                return { type: 'commensalism', detail: `สัตว์กินซากรอเก็บกินเศษอาหารที่เหลือจากสัตว์นักล่า โดยสัตว์นักล่าไม่ได้และไม่เสียประโยชน์` };
-            }
-            if (hasTrait('epiphyte') && hasTrait('tree')) {
-                return { type: 'commensalism', detail: `พืชอิงอาศัยเกาะบนพืชยืนต้นเพื่อรับแสง โดยไม่ได้ดูดน้ำเลี้ยงต้นไม้ใหญ่` };
-            }
-            if (org1.id === org2.id) {
-                return { type: 'competition', detail: `สิ่งมีชีวิตชนิดเดียวกัน ย่อมมีการแก่งแย่งทรัพยากร อาหาร หรือคู่ผสมพันธุ์ที่จำกัด (Intraspecific Competition)` };
-            }
-            if (t1.includes('herbivore') && t2.includes('herbivore')) {
-                return { type: 'competition', detail: `สัตว์กินพืชทั้งสองชนิดต้องแก่งแย่งชิงแหล่งอาหาร (พืช) และแหล่งน้ำเดียวกัน` };
-            }
-            if ((c1 === 'plant' && c2 === 'plant') || (hasTrait('producer') && hasTrait('producer'))) {
-                return { type: 'competition', detail: `พืชทั้งสองชนิดต้องแก่งแย่งแสงแดด แร่ธาตุ และน้ำในดินบริเวณเดียวกันเพื่อการเจริญเติบโต` };
-            }
-
-            return { type: 'neutralism', detail: `สิ่งมีชีวิตทั้งสองอาจอาศัยในแหล่งเดียวกัน แต่มีความเป็นอยู่แยกกันชัดเจน ไม่มีปฏิสัมพันธ์ที่ส่งผลกระทบต่อกัน` };
-        }
-
-        // --- Zero-Lag System & Image Fallbacks ---
-        function getProxyImageUrl(url) {
-            if (!url.startsWith('http')) return url; // ป้องกันการใส่ Proxy ให้ไฟล์ Local (เช่น image_aad7dc.jpg)
-            return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=400&h=400&fit=cover&output=webp`;
-        }
-
-        window.handleImgError = async function(img, orgId) {
-            if (img.dataset.failed) return;
-            img.dataset.failed = "1";
-            
-            const org = organisms.find(o => o.id === orgId);
-            if (!org) return;
-
-            try {
-                // หาก Proxy พลาด วิ่งไป Wikipedia อัตโนมัติ (ไม่แล็กเพราะดึงภาพขนาดเล็ก)
-                const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${org.wikiPage}`);
-                if (!res.ok) throw new Error('Wiki failed');
-                const data = await res.json();
-                if (data?.thumbnail?.source) {
-                    img.src = data.thumbnail.source;
-                    img.dataset.failed = "2";
-                    return;
-                }
-            } catch (e) {
-                console.warn(`Wiki fetch failed for ${org.name}, generating visual card...`);
-            }
-
-            // แผนสุดท้าย: สร้างการ์ดสวยงามทดแทน (เปลี่ยนเฉพาะรูป ไม่ให้ทับ UI อื่นๆ)
-            let iconName = 'paw-print';
-            let bgColors = "from-slate-800 to-slate-900";
-            if (org.category === 'mammal') { iconName = 'paw-print'; bgColors = "from-amber-900/80 to-amber-950"; }
-            else if (org.category === 'bird') { iconName = 'bird'; bgColors = "from-sky-900/80 to-sky-950"; }
-            else if (org.category === 'insect') { iconName = 'bug'; bgColors = "from-emerald-900/80 to-emerald-950"; }
-            else if (org.category === 'marine') { iconName = 'fish'; bgColors = "from-blue-900/80 to-blue-950"; }
-            else if (org.category === 'plant') { iconName = 'leaf'; bgColors = "from-green-900/80 to-green-950"; }
-            else if (org.category === 'microbe') { iconName = 'microscope'; bgColors = "from-purple-900/80 to-purple-950"; }
-
-            const fallbackDiv = document.createElement('div');
-            fallbackDiv.className = `w-full h-full flex flex-col items-center justify-center bg-gradient-to-br ${bgColors} text-slate-300 transition-transform duration-700 group-hover:scale-110`;
-            fallbackDiv.innerHTML = `
-                <i data-lucide="${iconName}" class="w-8 h-8 mb-2 opacity-50 drop-shadow-md"></i>
-                <span class="text-[10px] sm:text-xs font-bold text-center px-2 leading-tight drop-shadow-md pb-3">${org.name}</span>
-            `;
-            
-            img.replaceWith(fallbackDiv);
-            lucide.createIcons();
-        }
-
-        // สร้าง HTML ทั้งหมดแค่ครั้งเดียวตอนโหลดเว็บ (แก้แล็ก 100%)
-        function initInventory() {
-            // สร้าง Filter Buttons
-            const filterContainer = document.getElementById('categoryFilters');
-            filterContainer.innerHTML = categories.map(cat => `
-                <button id="btn-cat-${cat.id}" onclick="setCategory('${cat.id}')" class="whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all ${activeCategory === cat.id ? 'bg-cyan-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white'}">
-                    <i data-lucide="${cat.icon}" class="w-3.5 h-3.5"></i> ${cat.name}
+      <div className="w-full lg:w-1/3 h-[45vh] lg:h-full flex flex-col bg-slate-950 border-t lg:border-t-0 lg:border-l border-slate-800/50 z-20 shadow-[-10px_0_30px_rgba(0,0,0,0.5)]">
+        <div className="p-3 sm:p-4 bg-slate-900 border-b border-slate-800">
+          <div className="relative mb-2 sm:mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <input 
+              type="text" 
+              placeholder="ค้นหาสิ่งมีชีวิต (เช่น เสือ, พืช)..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 sm:py-2.5 pl-9 pr-4 text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors shadow-inner"
+            />
+          </div>
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {categories.map(cat => {
+              const Icon = cat.icon;
+              const isActive = activeCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all ${isActive ? 'bg-cyan-600 text-white shadow-md transform scale-105' : 'bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                >
+                  <Icon className="w-3.5 h-3.5" /> {cat.name}
                 </button>
-            `).join('');
+              );
+            })}
+          </div>
+        </div>
 
-            // สร้าง Grid Items 100 ชนิด
-            const container = document.getElementById('inventoryGrid');
-            container.innerHTML = organisms.map(org => `
-                <div id="card-${org.id}" data-category="${org.category}" data-name="${org.name.toLowerCase()}" onclick="selectOrganism('${org.id}')" class="group relative cursor-pointer rounded-xl overflow-hidden aspect-square border-2 border-transparent bg-slate-800 hover:border-cyan-400 transition-all duration-300 shadow-md hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] transform hover:-translate-y-1">
-                    <img 
-                        src="${getProxyImageUrl(org.images[0])}" 
-                        alt="${org.name}" 
-                        class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                        onerror="handleImgError(this, '${org.id}')"
-                        loading="lazy"
-                    />
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex items-end p-1.5 sm:p-2 transition-opacity">
-                        <div class="w-full">
-                            <p class="text-white font-bold text-[10px] sm:text-xs leading-tight drop-shadow-md truncate">${org.name}</p>
-                        </div>
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 custom-scrollbar bg-slate-900/50">
+          {filteredOrganisms.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-slate-500">
+              <Search className="w-8 h-8 mb-2 opacity-50" />
+              <p className="text-sm">ไม่พบข้อมูลทางชีววิทยา</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-2 sm:gap-3 pb-8">
+              {filteredOrganisms.map((org) => {
+                const isSelected = slot1?.id === org.id || slot2?.id === org.id;
+                return (
+                  <div 
+                    key={org.id} 
+                    onClick={() => handleSelect(org)}
+                    className={`group relative cursor-pointer rounded-xl overflow-hidden aspect-square border-2 transition-all duration-300 transform hover:-translate-y-1 ${isSelected ? 'border-cyan-500 ring-2 ring-cyan-500/50 scale-[0.98]' : 'border-transparent bg-slate-800 hover:border-cyan-400 shadow-md hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]'}`}
+                  >
+                    <SafeImage organism={org} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex items-end p-1.5 sm:p-2 transition-opacity pointer-events-none">
+                      <div className="w-full">
+                        <p className="text-white font-bold text-[10px] sm:text-xs leading-tight drop-shadow-md truncate">{org.name}</p>
+                      </div>
                     </div>
-                    <div id="check-${org.id}" class="absolute top-1 right-1 sm:top-2 sm:right-2 bg-cyan-500 text-white rounded-full p-0.5 sm:p-1 shadow-lg opacity-0 scale-50 transition-all duration-300">
-                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                    
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setBioModalOrg(org); }}
+                      className="absolute top-1 left-1 sm:top-2 sm:left-2 bg-slate-950/80 text-cyan-400 rounded-full p-1 sm:p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-cyan-500 hover:text-white hover:scale-110 z-20"
+                      title="สแกนข้อมูลชีวภาพ"
+                    >
+                      <ScanLine className="w-3 h-3 sm:w-4 sm:h-4" />
+                    </button>
+
+                    {isSelected && (
+                      <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-cyan-500 text-white rounded-full p-0.5 sm:p-1 shadow-lg transition-all duration-300">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-300">
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex justify-between items-center bg-slate-800/50">
+              <h2 className="text-base sm:text-xl font-bold text-white flex items-center gap-2">
+                <BookOpen className="text-indigo-400 w-5 h-5" />
+                รูปแบบความสัมพันธ์ในระบบนิเวศ
+              </h2>
+              <button onClick={() => setShowInfo(false)} className="text-slate-400 hover:text-white bg-slate-800 hover:bg-red-500/80 p-2 rounded-lg transition-all hover:scale-105 active:scale-95">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1 bg-slate-900/80">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {relationshipTypes.map((type) => (
+                  <div key={type.id} className={`p-3 sm:p-4 rounded-xl border ${type.border} ${type.bg} flex flex-col hover:bg-slate-800/80 transition-colors`}>
+                    <div className="flex justify-between items-start mb-1 sm:mb-2">
+                      <h3 className={`font-bold text-sm sm:text-base ${type.color}`}>{type.name}</h3>
+                      <span className="font-mono font-bold bg-black/40 px-2 py-0.5 rounded text-white text-[10px] sm:text-xs shadow-inner border border-white/5">
+                        {type.symbols}
+                      </span>
                     </div>
-                </div>
-            `).join('');
-            
-            lucide.createIcons();
-            
-            // Build Modal
-            document.getElementById('modalContent').innerHTML = relationshipTypes.map(type => `
-                <div class="p-3 sm:p-4 rounded-xl border ${type.border} ${type.bg} flex flex-col hover:bg-slate-800/80 transition-colors">
-                    <div class="flex justify-between items-start mb-1 sm:mb-2">
-                        <h3 class="font-bold text-sm sm:text-base ${type.color}">${type.name}</h3>
-                        <span class="font-mono font-bold bg-black/40 px-2 py-0.5 rounded text-white text-[10px] sm:text-xs shadow-inner border border-white/5">
-                            ${type.symbols}
-                        </span>
-                    </div>
-                    <p class="text-slate-300 text-[10px] sm:text-xs leading-relaxed">
-                        ${type.desc}
+                    <p className="text-slate-300 text-[10px] sm:text-xs leading-relaxed">
+                      {type.desc}
                     </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {bioModalOrg && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-slate-900 border border-cyan-500/50 rounded-3xl w-full max-w-sm overflow-hidden flex flex-col shadow-[0_0_50px_rgba(34,211,238,0.2)] animate-in zoom-in-95 duration-300">
+            <div className="relative w-full h-48 sm:h-56 bg-slate-800">
+              <SafeImage organism={bioModalOrg} className="w-full h-full object-cover opacity-80" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent"></div>
+              <button onClick={() => setBioModalOrg(null)} className="absolute top-3 right-3 text-white bg-black/50 hover:bg-red-500 p-2 rounded-full transition-all z-10">
+                <X className="w-4 h-4" />
+              </button>
+              <div className="absolute bottom-4 left-4 right-4">
+                <span className="bg-cyan-600 text-white text-[10px] px-2 py-1 rounded-md font-bold mb-1.5 inline-block shadow-md">
+                  {categories.find(c => c.id === bioModalOrg.category)?.name || bioModalOrg.category}
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black text-white drop-shadow-lg">{bioModalOrg.name}</h2>
+              </div>
+            </div>
+            <div className="p-4 sm:p-6 flex flex-col gap-4">
+              <div>
+                <h3 className="text-cyan-400 text-xs font-bold mb-3 flex items-center gap-1.5"><Dna className="w-4 h-4" /> ลักษณะทางชีววิทยา (Bio-Traits)</h3>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {bioModalOrg.traits.map(t => (
+                    <span key={t} className="bg-slate-800 text-cyan-300 text-[10px] sm:text-xs px-3 py-1.5 rounded-lg border border-cyan-500/30 shadow-inner">
+                      {traitDictionary[t] || t}
+                    </span>
+                  ))}
                 </div>
-            `).join('');
-        }
+              </div>
+              <button onClick={() => setBioModalOrg(null)} className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs sm:text-sm font-bold transition-colors border border-slate-700 mt-2 shadow-inner">ปิดหน้าต่างสแกน</button>
+            </div>
+          </div>
+        </div>
+      )}
 
-        // --- Interaction Logic ---
-        function filterInventory() {
-            let visibleCount = 0;
-            const query = searchQuery.toLowerCase();
-            
-            // ใช้ classList อัปเดต UI ทันที ไม่แล็กแน่นอน
-            organisms.forEach(org => {
-                const card = document.getElementById(`card-${org.id}`);
-                const matchQuery = org.name.toLowerCase().includes(query);
-                const matchCat = activeCategory === 'all' || org.category === activeCategory;
-                
-                if (matchQuery && matchCat) {
-                    card.classList.remove('hidden');
-                    visibleCount++;
-                } else {
-                    card.classList.add('hidden');
-                }
-            });
-
-            document.getElementById('emptySearch').classList.toggle('hidden', visibleCount > 0);
-        }
-
-        function updateSelectionUI() {
-            // เคลียร์ UI เดิมทั้งหมดก่อน
-            organisms.forEach(org => {
-                const card = document.getElementById(`card-${org.id}`);
-                const check = document.getElementById(`check-${org.id}`);
-                card.classList.remove('border-cyan-500', 'ring-2', 'ring-cyan-500/50', 'scale-[0.98]');
-                check.classList.remove('opacity-100', 'scale-100');
-                check.classList.add('opacity-0', 'scale-50');
-            });
-
-            // ไฮไลต์ตัวที่ถูกเลือก
-            [slot1, slot2].forEach(slot => {
-                if (slot) {
-                    const card = document.getElementById(`card-${slot.id}`);
-                    const check = document.getElementById(`check-${slot.id}`);
-                    card.classList.add('border-cyan-500', 'ring-2', 'ring-cyan-500/50', 'scale-[0.98]');
-                    check.classList.remove('opacity-0', 'scale-50');
-                    check.classList.add('opacity-100', 'scale-100');
-                }
-            });
-
-            updateLabBoardUI();
-        }
-
-        function updateLabBoardUI() {
-            const updateSlot = (slotData, slotNum) => {
-                const container = document.getElementById(`slot${slotNum}-container`);
-                const empty = document.getElementById(`slot${slotNum}-empty`);
-                const content = document.getElementById(`slot${slotNum}-content`);
-                const mediaBox = document.getElementById(`slot${slotNum}-media`);
-                const name = document.getElementById(`slot${slotNum}-name`);
-
-                if (slotData) {
-                    empty.classList.add('hidden');
-                    content.classList.remove('hidden');
-                    name.textContent = slotData.name;
-                    container.classList.add('border-cyan-500', 'slot-active');
-                    container.classList.remove('border-slate-700', 'border-dashed');
-
-                    // ดึงภาพจากคลัง (ตัวที่โชว์ผ่านแล้ว) มาใส่ในช่องจับคู่โดยตรง
-                    mediaBox.innerHTML = '';
-                    const invCard = document.getElementById(`card-${slotData.id}`);
-                    if (invCard && invCard.firstElementChild) {
-                        const clonedMedia = invCard.firstElementChild.cloneNode(true);
-                        if (clonedMedia.tagName === 'IMG') {
-                            clonedMedia.className = "w-full h-full object-cover transition-transform duration-700 group-hover:scale-110";
-                        }
-                        mediaBox.appendChild(clonedMedia);
-                    }
-                } else {
-                    empty.classList.remove('hidden');
-                    content.classList.add('hidden');
-                    mediaBox.innerHTML = '';
-                    container.classList.remove('border-cyan-500', 'slot-active');
-                    container.classList.add('border-slate-700', 'border-dashed');
-                }
-            };
-
-            updateSlot(slot1, 1);
-            updateSlot(slot2, 2);
-
-            const plus = document.getElementById('plus-icon');
-            if (slot1 && slot2) {
-                plus.classList.add('rotate-180', 'text-cyan-400', 'scale-125');
-            } else {
-                plus.classList.remove('rotate-180', 'text-cyan-400', 'scale-125');
-            }
-
-            document.getElementById('btnClear').classList.toggle('hidden', !(slot1 || slot2));
-        }
-
-        function triggerAnalysisAnimation() {
-            const resultBox = document.getElementById('resultState');
-            const waitingBox = document.getElementById('waitingState');
-            const scanOverlay = document.getElementById('scanOverlay');
-            
-            // ซ่อนผลลัพธ์ โชว์สแกนเนอร์
-            resultBox.classList.add('hidden', 'opacity-0');
-            waitingBox.classList.add('hidden');
-            scanOverlay.classList.remove('hidden');
-            scanOverlay.classList.add('flex');
-            
-            // เล่นแอนิเมชัน 1.5 วินาที
-            setTimeout(() => {
-                scanOverlay.classList.add('hidden');
-                scanOverlay.classList.remove('flex');
-                showResultCard();
-                isAnalyzing = false;
-            }, 1500);
-        }
-
-        function showResultCard() {
-            const container = document.getElementById('resultState');
-            if (slot1 && slot2) {
-                const matchInfo = getMatchResult(slot1, slot2);
-                const typeInfo = relationshipTypes.find(t => t.id === matchInfo.type);
-                const result = { ...matchInfo, ...typeInfo };
-                
-                container.innerHTML = `
-                    <div class="w-full h-full ${result.bg} ${result.border} border-2 rounded-2xl p-4 sm:p-6 backdrop-blur-md shadow-xl flex flex-col items-center text-center animate-pop ${result.glow} hardware-accelerated">
-                        <div class="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                            <h3 class="text-xl sm:text-3xl font-black ${result.color} drop-shadow-md tracking-wide">
-                                ${result.name}
-                            </h3>
-                            <span class="bg-black/40 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-sm sm:text-lg font-mono font-bold tracking-widest border border-white/20 text-white shadow-inner">
-                                ${result.symbols}
-                            </span>
-                        </div>
-                        <p class="text-slate-200 text-xs sm:text-base mb-1 max-w-lg leading-relaxed opacity-90">
-                            ${result.detail}
-                        </p>
-                    </div>
-                `;
-                container.classList.remove('hidden');
-                // Use slight timeout to allow display:block to apply before opacity transition
-                setTimeout(() => container.classList.remove('opacity-0'), 50);
-            }
-        }
-
-        window.selectOrganism = function(orgId) {
-            if (isAnalyzing) return; // ล็อกปุ่มตอน AI สแกน
-            
-            const org = organisms.find(o => o.id === orgId);
-            
-            // กรณีเลือกตัวเดิมซ้ำ ให้เคลียร์ตัวนั้นทิ้ง
-            if (slot1 && slot1.id === orgId) {
-                slot1 = null;
-            } else if (slot2 && slot2.id === orgId) {
-                slot2 = null;
-            } else if (!slot1) {
-                slot1 = org;
-            } else if (!slot2) {
-                slot2 = org;
-            } else {
-                slot2 = org; // ถ้าเต็มให้ทับช่อง 2
-            }
-
-            updateSelectionUI();
-
-            // วิเคราะห์และสแกน
-            if (slot1 && slot2) {
-                isAnalyzing = true;
-                triggerAnalysisAnimation();
-            } else {
-                document.getElementById('resultState').classList.add('hidden', 'opacity-0');
-                document.getElementById('waitingState').classList.remove('hidden');
-            }
-        };
-
-        window.clearSlot = function(slotNum) {
-            if (isAnalyzing) return;
-            if (slotNum === 1) slot1 = null;
-            if (slotNum === 2) slot2 = null;
-            updateSelectionUI();
-            document.getElementById('resultState').classList.add('hidden', 'opacity-0');
-            document.getElementById('waitingState').classList.remove('hidden');
-        };
-
-        window.clearBoard = function() {
-            if (isAnalyzing) return;
-            slot1 = null;
-            slot2 = null;
-            updateSelectionUI();
-            document.getElementById('resultState').classList.add('hidden', 'opacity-0');
-            document.getElementById('waitingState').classList.remove('hidden');
-        };
-
-        window.setCategory = function(catId) {
-            activeCategory = catId;
-            // Update filter buttons style
-            categories.forEach(cat => {
-                const btn = document.getElementById(`btn-cat-${cat.id}`);
-                if (cat.id === catId) {
-                    btn.className = `whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all bg-cyan-600 text-white shadow-md transform scale-105`;
-                } else {
-                    btn.className = `whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-white`;
-                }
-            });
-            filterInventory();
-        };
-
-        window.handleSearch = function() {
-            searchQuery = document.getElementById('searchInput').value;
-            filterInventory();
-        };
-
-        window.toggleModal = function(show) {
-            const modal = document.getElementById('infoModal');
-            const box = document.getElementById('modalBox');
-            if (show) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                // Trigger transition
-                setTimeout(() => {
-                    modal.classList.remove('opacity-0');
-                    box.classList.remove('scale-95');
-                    box.classList.add('scale-100');
-                }, 10);
-            } else {
-                modal.classList.add('opacity-0');
-                box.classList.remove('scale-100');
-                box.classList.add('scale-95');
-                setTimeout(() => {
-                    modal.classList.add('hidden');
-                    modal.classList.remove('flex');
-                }, 300);
-            }
-        };
-
-        // เริ่มต้นการทำงาน (Initial Render)
-        window.onload = function() {
-            initInventory();
-            lucide.createIcons();
-        };
-    </script>
-</body>
-</html>
+    </div>
+  );
+}
